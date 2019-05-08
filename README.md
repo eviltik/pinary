@@ -23,7 +23,9 @@ Yet another JSONRPC client/server
 npm install pinary
 ```
 
-## Server usage
+## Server
+
+### Server: instantiation
 
 ```
 const PinaryServer = require('pinary').server;
@@ -48,9 +50,9 @@ const server = new PinaryServer();
 | rejectUnauthorized    | false                         |
 
 
-## Client usage
+## Client
 
-### Instantiation
+### Client: instantiation
 ```
 const PinaryClient = require('pinary').client;
 const client = new PinaryClient();
@@ -67,7 +69,7 @@ const client = new PinaryClient();
 | reconnectMaxAttempts                  | 5                             |      |
 | reconnectWaitAfterMaxAttempsReached   | 2000                          | ms   |
 
-### Connect to the server
+### Client: connecting to the server
 ```
 // connect using callback
 client.connect(err => {
@@ -86,7 +88,7 @@ async function() {
 
 ```
 
-### Trigger a method
+### Client: trigger a method
 
 ```
 // using callback
@@ -111,4 +113,4 @@ async function letsgo() {
 * promises tests
 * finish doc
   * emitter events (both client and server)
-  * server methods registration (see test/tests/102.methodExist.js for moment) 
+  * server methods registration (see test/tests/102.methodExist.js for moment)
