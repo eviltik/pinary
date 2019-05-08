@@ -22,7 +22,7 @@ const DEFAULT_OPTIONS = {
 
 function Server(options) {
 
-    options = merge(DEFAULT_OPTIONS, options);
+    options = merge(DEFAULT_OPTIONS, options||{});
 
     let server;
 
