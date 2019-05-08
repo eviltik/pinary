@@ -4,7 +4,7 @@
 [![Dependencies](https://david-dm.org/eviltik/pinary.svg)](https://david-dm.org/eviltik/pinary)
 [![npm version](https://badge.fury.io/js/pinary.svg)](https://badge.fury.io/js/pinary)
 [![Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=102)](https://github.com/ellerbrock/open-source-badge/)
-[![Dependency Status](https://david-dm.org/eviltik/pinary.svg)](https://david-dm.org/eviltik/pinary)
+
 
 ## Introduction
 Yet another JSONRPC client/server
