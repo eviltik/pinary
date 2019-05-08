@@ -10,7 +10,7 @@ require('./testWrap')(__filename, (test) => {
 
     const client = new PinaryClient();
 
-    function callbackClientTriggerUnexistingMethod(callback) {
+    function callbackClientTriggerExistingMethod(callback) {
         client.method('myMethod', (err, result) => {
             test.equal(err, undefined, 'callback: should not return an error');
             test.equal(result, true, 'callback: should return true');
@@ -18,7 +18,7 @@ require('./testWrap')(__filename, (test) => {
         });
     }
 
-    async function asyncClientTriggerUnexistingMethod() {
+    async function asyncClientTriggerExistinggMethod() {
         let result;
         try {
             result = await client.method('myMethod');
@@ -40,8 +40,8 @@ require('./testWrap')(__filename, (test) => {
             test.pass('client connected');
             next();
         },
-        callbackClientTriggerUnexistingMethod,
-        asyncClientTriggerUnexistingMethod,
+        callbackClientTriggerExistingMethod,
+        asyncClientTriggerExistinggMethod,
         client.close,
         next => {
             test.pass('client closed');
