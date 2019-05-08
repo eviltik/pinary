@@ -1,6 +1,6 @@
 {
   "name": "pinary",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "JSONRPC other TCP/TLS using binary frames",
   "main": "index.js",
   "scripts": {

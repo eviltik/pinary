@@ -7,6 +7,7 @@
 
 
 ## Introduction
+
 Yet another JSONRPC client/server
 
 * Use TCP or TLS (under the hood, 2 sockets are used, i.e writer and reader)
