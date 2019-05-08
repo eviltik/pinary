@@ -1,7 +1,5 @@
 const debug = require('debug')('pinary:server:methods');
-const klawSync = require('klaw-sync');
 const path = require('path');
-const handler = require('./handler');
 
 const methods = {};
 const methodsDescriptor = {};
@@ -14,6 +12,8 @@ let cmdBase;
 let file;
 
 function initialize() {
+
+    const klawSync = require('klaw-sync');
 
     for (file of klawSync(path.resolve(__dirname+'/handlers'), { depthLimit:1, nodir:true })) {
 
