@@ -1,0 +1,42 @@
+{
+  "name": "pinary",
+  "version": "1.0.0",
+  "description": "JSONRPC other TCP/TLS using binary frames",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/index.js"
+  },
+  "author": "eviltik",
+  "license": "MIT",
+  "dependencies": {
+    "debug": "4.1.1",
+    "deepmerge": "3.2.0",
+    "hyperid": "2.0.2",
+    "missive": "3.0.1"
+  },
+  "devDependencies": {
+    "async": "2.6.2",
+    "klaw-sync": "6.0.0",
+    "tap-spec": "5.0.0",
+    "tape": "4.10.1"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eviltik/pinary.git"
+  },
+  "keywords": [
+    "jsonrpc",
+    "tcp",
+    "tls",
+    "binary",
+    "frames",
+    "zlib"
+  ],
+  "bugs": {
+    "url": "https://github.com/eviltik/pinary/issues"
+  },
+  "homepage": "https://github.com/eviltik/pinary#readme"
+}
