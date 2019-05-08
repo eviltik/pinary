@@ -7,4 +7,12 @@
 [![Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=102)](https://github.com/ellerbrock/open-source-badge/)
 [![Dependency Status](https://david-dm.org/eviltik/pinary.svg)](https://david-dm.org/eviltik/pinary)
 
-A JSONRPC server other TCP/TLS using binary frames and it's client.
+
+Yet another JSONRPC client/server
+
+* Use TCP or TLS
+* Binary frames
+* Optional zlib compression
+
+TODO
+* as usual ... doc ...
