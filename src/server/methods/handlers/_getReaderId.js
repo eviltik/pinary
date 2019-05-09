@@ -1,5 +1,7 @@
 const debug = require('debug')('pinary:server');
 const handler = require('../handler');
+const hyperid = require('hyperid');
+const uuid = hyperid(true);
 
 const descriptor = {
     name:'_getReaderId',
@@ -7,7 +9,7 @@ const descriptor = {
 };
 
 function handle(params, context, callback) {
-    const uniqId = Date.now();
+    const uniqId = uuid();
     context.session.server.clients[context.session.id].readerId = uniqId;
     context.session.server.clientsReader[context.session.id] = context.session.server.clients[context.session.id].encoder;
 

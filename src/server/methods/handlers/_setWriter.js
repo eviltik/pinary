@@ -8,7 +8,7 @@ const descriptor = {
     properties:{
         'readerId':{
             description:'socket reader uniq id',
-            type:'number'
+            type:'string'
         }
     },
     required:['readerId']

@@ -28,8 +28,8 @@ function Server(options) {
     options = merge(DEFAULT_OPTIONS, options||{});
 
     let server;
-    const serverSubscribedChannels = {};
-    const clientsSubscribedChannel = {};
+    let serverSubscribedChannels = {};
+    let clientsSubscribedChannel = {};
 
     function RPCCall(task) {
 
@@ -60,6 +60,13 @@ function Server(options) {
     function removeClient(socketId) {
         delete server.clients[socketId];
         delete server.clientsReader[socketId];
+        async.mapValues(clientsSubscribedChannel, (clientsId, channel, next) => {
+            const idx = clientsId.indexOf(socketId);
+            if (idx>=0) {
+                clientsSubscribedChannel[channel].splice(idx, 1);
+            }
+            next();
+        });
     }
 
     function onServerError(err) {
@@ -235,6 +242,9 @@ function Server(options) {
         } catch(e) {
             debug(e);
         }
+
+        serverSubscribedChannels = {};
+        clientsSubscribedChannel = {};
 
         if (closed) {
             debug(`${closed} client(s) has been closed`);
