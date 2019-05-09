@@ -232,7 +232,7 @@ function Server(options) {
         try {
             let id;
             for (id in server.clients) {
-                debug(`server stopping: disconnecting client ${id}`);
+                debug(`server stopping: ending socket ${id}`);
                 server.clients[id].encoder.write(JSON.stringify({ error:'SERVER_SHUTDOWN' }));
                 server.clients[id].socket.end();
                 server.clients[id].socket.destroy();
@@ -247,7 +247,7 @@ function Server(options) {
         clientsSubscribedChannel = {};
 
         if (closed) {
-            debug(`${closed} client(s) has been closed`);
+            debug(`${closed} socket(s) has been closed, ${closed/2} client disconnected`);
         }
 
         server.close(err => {
