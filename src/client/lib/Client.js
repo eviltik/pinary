@@ -4,7 +4,7 @@ const EventEmitter = require('events');
 const hyperid = require('hyperid');
 const async = require('async');
 const attributes = require('../../attributes');
-const frame = require('../../frame')
+const frame = require('../../frame');
 const uuid = hyperid(true);
 const DEFAULT_QUEUE_SIZE = 100;
 
@@ -38,7 +38,7 @@ class BaseClient extends EventEmitter {
         this._host = host;
 
         this._isConnected = false;
-        this._eventsByName = null;
+        this._eventsByName = {};
 
         this._requestsQueue = async.queue(
             this.handleRequestsQueue.bind(this),
@@ -71,24 +71,18 @@ class BaseClient extends EventEmitter {
 
     eventExists(eventName) {
 
-        if (this._eventsByName) {
-            return this._eventsByName[eventName];
-        }
-
-        if (!this._eventsByName) {
-            this._eventsByName = {};
-            for (const ev of this.eventNames()) {
-                this._eventsByName[ev] = true;
-            }
+        if (this._eventsByName[eventName]) {
+            this._debug(`event ${eventName} found`);
+        } else {
+            this._debug(`event ${eventName} NOT found`);
         }
 
         return this._eventsByName[eventName];
     }
 
     emitEvent(eventName, data) {
-        if (this.eventExists(eventName)) {
-            this.emit(eventName, data);
-        }
+        const fn = this.eventExists(eventName);
+        if (fn) fn(data);
     }
 
     tlsConnect(callback) {
@@ -145,7 +139,7 @@ class BaseClient extends EventEmitter {
         s.on('end', () => {
             if (!this._isConnected) return;
             this._debug(`${this._id}: end`);
-            this.emitEvent('end');
+            this.emitEvent('socketEnd');
             this.unpipeSocket(s);
             this._isConnected = false;
             this._requestsQueue.pause();
@@ -164,7 +158,7 @@ class BaseClient extends EventEmitter {
         s.on('error', (err) => {
             this._debug(`${this._id}: error ${err.message}`);
             callback(err);
-            this.emitEvent('error', err);
+            this.emitEvent('socketError', err);
             this.unpipeSocket(s);
             s.destroy();
         });
@@ -361,6 +355,11 @@ class BaseClient extends EventEmitter {
 
         this._debug(`${this._id}: pubsub: data published in channel ${channel}`);
         encoder.write(frame.publish(channel, data));
+    }
+
+    on(event, fn) {
+        this._debug(`register event ${event}`);
+        this._eventsByName[event] = fn;
     }
 }
 

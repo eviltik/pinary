@@ -27,24 +27,26 @@ function DinaryClient(port, host, options) {
 
     self.retryCount = 0;
 
-    clientReader.on('error', err => {
-        this.emit('error', err);
-        debug('error', err.message);
+    clientReader.on('socketError', err => {
+        debug('socketError', err.message);
+        self.emit('error', err);
     });
 
-    clientWriter.on('error', err => {
-        this.emit('error', err);
-        debug('error', err.message);
+    clientWriter.on('socketError', err => {
+        debug('socketError', err.message);
+        self.emit('error', err);
     });
 
-    clientWriter.on('end', () => {
+    clientWriter.on('socketEnd', () => {
+        debug('socketEnd');
         if (clientWriter.isClosing()) {
             clientReader.close();
             return;
         }
     });
 
-    clientReader.on('end', () => {
+    clientReader.on('socketEnd', () => {
+        debug('socketEnd');
         if (clientReader.isClosing()) {
             clientWriter.close();
             return;
