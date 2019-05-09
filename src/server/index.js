@@ -17,7 +17,8 @@ const DEFAULT_OPTIONS = {
     cert:null,
     ca:null, // should be an array of ca
     secureProtocol: 'TLSv1_2_method',
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    timeoutData:1000
 };
 
 function Server(options) {
@@ -63,6 +64,13 @@ function Server(options) {
 
     function onConnect(socket) {
 
+        server.emit('connect');
+
+        socket.killer = setTimeout(() => {
+            // kill the socket if nothing append on it
+            socket.end();
+        }, options.timeoutData);
+
         socket.setNoDelay(true);
 
         socket.id = `${socket.remoteAddress}:${socket.remotePort}`;
@@ -76,6 +84,10 @@ function Server(options) {
         socket.on('error', err => {
             debug(`${socket.id}: ${err.message}`);
             delete server.clients[socket.id];
+        });
+
+        socket.once('data', () => {
+            clearTimeout(socket.killer);
         });
 
         debug(`${socket.id}: client connected`);
@@ -217,7 +229,16 @@ function Server(options) {
         methods.register(new handler.Method(descriptor, fn));
     }
 
-    return { start, stop, registerMethod };
+    function on(eventName, fn) {
+        server.on(eventName, fn);
+    }
+
+    return {
+        start,
+        stop,
+        registerMethod,
+        on
+    };
 }
 
 
