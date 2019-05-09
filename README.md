@@ -126,9 +126,17 @@ async function letsgo() {
 Note: if not yet connected or while the client is trying to reconnect,
 RPC calls are stored in a queue and played when client is connected.
 
-### Publish/Subscribe (PUBSUB)
+#### Client: events
 
-#### Client to clients
+| event name            | arguments                     |  Notes  
+|-----------------------|-------------------------------|----------------
+| connected             | retryCount                    | if retryCount = 0, first connection, else reconnection  
+| error                 | Error                         |
+
+
+## Publish/Subscribe (PUBSUB)
+
+### Client to clients
 ```
 const Server = require('pinary').server;
 const Client = require('pinary').client;
@@ -176,6 +184,7 @@ client.connect(() => {
 });
 ```
 
+
 The actual implementation is minimalistic:
 * a channel is considered as an ID, you cannot use wildcards like redis or faye
 
@@ -183,5 +192,5 @@ The actual implementation is minimalistic:
 ## TODO
 * promises tests
 * finish doc
-  * events emitted (both client and server)
+  * events emitted (server)
   * server methods registration (see test/tests/102.methodExist.js, or examples/ for moment)

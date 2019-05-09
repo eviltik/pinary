@@ -1,6 +1,6 @@
 {
   "name": "pinary",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "RPC other TCP/TLS and PubSub",
   "main": "index.js",
   "scripts": {
