@@ -12,6 +12,7 @@ Yet another RPC client and server, with minimalistic publish/subscribe implement
 
 * Server
   * TCP or TLS, as you want (TLS require certificates, see https://github.com/jfromaniello/selfsigned )
+  * Persistant connection
   * Binary frames (fast)
   * Optional ZLIB compression
   * Minimalistic JSON Schema implementation (input integrity)
@@ -152,13 +153,6 @@ client1.connect(() => {
 });
 
 ```
-Warning:
-* in actual implementation every published messages are dispatched to all
-connected clients, then, when client received the message, the client check if
-it has a subscription to the channel.
-* The point should be improved, for security and performance reasons.
-* TODO: the server should send messages only for client who subscribed the channel
-
 
 #### Server to clients
 ```
@@ -183,7 +177,7 @@ client.connect(() => {
 ```
 
 The actual implementation is minimalistic:
-* a channel is considered as an ID, you cannot use wildcards, like redis
+* a channel is considered as an ID, you cannot use wildcards like redis or faye
 
 
 ## TODO

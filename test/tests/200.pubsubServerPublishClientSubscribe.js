@@ -27,7 +27,8 @@ require('./testWrap')(__filename, (test) => {
                     received = true;
                 }
             });
-            next();
+            // let the time for the server to register subscription of the client
+            setTimeout(next, 100);
         },
         next => {
             server.publish('/bla', 'foo');

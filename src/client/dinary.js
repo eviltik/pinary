@@ -137,6 +137,7 @@ function DinaryClient(port, host, options) {
 
     function subscribe(channel, callback) {
         clientReader.subscribeTo(channel, callback);
+        clientWriter.subscribeToInformServer(channel, clientWriter._encoder);
     }
 
     function publish(channel, data) {

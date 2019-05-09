@@ -7,6 +7,7 @@ module.exports = {
 
     // PUBSUB
     publish:'_p',
+    subscribe:'_s',
     channel:'c',
     data:'d',
 

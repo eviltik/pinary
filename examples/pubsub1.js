@@ -11,6 +11,8 @@ client.connect(() => {
         console.log(data);
         process.exit();
     });
-
-    server.publish('/bla', { foo:'bar' });
 });
+
+setTimeout(() => {
+    server.publish('/bla', { foo:'bar' });
+}, 100);

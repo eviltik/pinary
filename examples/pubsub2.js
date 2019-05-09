@@ -8,7 +8,7 @@ server.start();
 
 server.subscribe('/bla', (data) => {
     console.log(data);
-    process.exit();
+    setTimeout(process.exit, 200);
 });
 
 client.connect(() => {

@@ -339,8 +339,22 @@ class BaseClient extends EventEmitter {
     }
 
     subscribeTo(channel, callback) {
-        this._debug(`${this._id}: pubsub: client subscribed to ${channel}`);
+        this._debug(`${this._id}: pubsub: client subscribe to ${channel}`);
         this._subscribedChannels[channel] = callback;
+    }
+
+    subscribeToInformServer(channel, encoder) {
+        if (!this._isConnected) {
+            this._debug(`${this._id}: pubsub: cannot subscribe: not connected`);
+            return;
+        }
+
+        this._debug(`${this._id}: pubsub: inform server for subscription to ${channel}`);
+
+        const frame = {};
+        frame[attributes.method] = attributes.subscribe;
+        frame[attributes.channel] = channel;
+        encoder.write(frame);
     }
 
     publishTo(channel, data, encoder) {

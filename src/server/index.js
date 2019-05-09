@@ -27,7 +27,8 @@ function Server(options) {
     options = merge(DEFAULT_OPTIONS, options||{});
 
     let server;
-    const subscribedChannels = {};
+    const serverSubscribedChannels = {};
+    const clientsSubscribedChannel = {};
 
     function rpcIn(task) {
 
@@ -36,27 +37,26 @@ function Server(options) {
             if (err) {
 
                 if (err instanceof Error) {
-                    task.encoder.write({
-                        id:task.data.id,
-                        error:{
-                            code:errors.ERROR_CODE_PARAMETER,
-                            message:err.message
-                        }
-                    });
-
+                    const frame = {};
+                    frame[attributes.id] = task.data.id;
+                    frame[attributes.error] = 'ERROR_CODE_PARAMETER';
+                    task.encoder.write(frame);
                     debug(`${task.socket.id}: ${err.stack}`);
                     return;
                 }
 
-                task.encoder.write({ id: task.data.id, error: err });
+                const frame = {};
+                frame[attributes.id] = task.data.id;
+                frame[attributes.error] = err;
+                task.encoder.write(frame);
                 debug(`${task.socket.id}: ${err.message}`);
                 return;
             }
 
-            task.encoder.write({
-                id:task.data.id,
-                r:result
-            });
+            const frame = {};
+            frame[attributes.id] = task.data.id;
+            frame[attributes.result] = result;
+            task.encoder.write(frame);
         });
     }
 
@@ -65,7 +65,7 @@ function Server(options) {
     }
 
     function onConnect(socket) {
-
+        socket.setNoDelay(true);
         server.emit('connect');
 
         socket.killer = setTimeout(() => {
@@ -73,7 +73,6 @@ function Server(options) {
             socket.end();
         }, options.timeoutData);
 
-        socket.setNoDelay(true);
 
         socket.id = `${socket.remoteAddress}:${socket.remotePort}`;
 
@@ -105,6 +104,7 @@ function Server(options) {
             const mmethod = data[attributes.method];
             const mparams = data[attributes.params];
             const mdata = data[attributes.data];
+            const mchannel = data[attributes.channel];
 
             if (server._connections>(options.maxClients*2)) {
                 debug(`${socket.id}: refusing connection, number of connection: ${server._connections-1}, allowed: ${options.maxClients*2}`);
@@ -126,11 +126,19 @@ function Server(options) {
             }
 
             if (mmethod === attributes.publish) {
-                const mchannel = data[attributes.channel];
-                if (subscribedChannels[mchannel]) {
-                    subscribedChannels[mchannel](mdata);
+                debug(`${socket.id}: pubsub: received data from channel ${mchannel}`);
+                if (serverSubscribedChannels[mchannel]) {
+                    serverSubscribedChannels[mchannel](mdata);
                 }
                 publish(mchannel, mdata);
+                return;
+            }
+
+            if (mmethod === attributes.subscribe) {
+                if (!clientsSubscribedChannel[mchannel]) {
+                    clientsSubscribedChannel[mchannel] = [];
+                }
+                clientsSubscribedChannel[mchannel].push(socket.id);
                 return;
             }
 
@@ -176,7 +184,7 @@ function Server(options) {
                 throw new Error(err);
             }
 
-            debug(`server started (maxClients ${options.maxClients*2})`);
+            debug('server started');
             callback && callback();
         }
 
@@ -227,7 +235,7 @@ function Server(options) {
             let id;
             for (id in server.clients) {
                 debug(`server stopping: disconnecting client ${id}`);
-                server.clients[id].encoder.write(JSON.stringify({ error:errors.SERVER_SHUTDOWN }));
+                server.clients[id].encoder.write(JSON.stringify({ error:'SERVER_SHUTDOWN' }));
                 server.clients[id].socket.end();
                 server.clients[id].socket.destroy();
                 delete server.clients[id];
@@ -264,22 +272,52 @@ function Server(options) {
     }
 
     function publish(channel, data) {
-        async.mapValues(server.clientsReader, (client) => {
+
+        if (!clientsSubscribedChannel[channel] || !clientsSubscribedChannel[channel].length) {
+            debug(`pubsub: dispatch: no subscribers for channel ${channel} (server only ?)`);
+            return;
+        }
+
+        let send = 0;
+
+        async.mapValues(clientsSubscribedChannel[channel], (writerId, index, next) => {
+            if (!server.clients[writerId]) {
+                debug(`pubsub: dispatch error: client ${writerId} not found`);
+                return;
+            }
+
+            if (!server.clients[writerId].socket) {
+                debug(`pubsub: dispatch error: client ${writerId} don't have underlying socket object`);
+                return;
+            }
+
+            if (!server.clients[writerId].socket.socketReader) {
+                debug(`pubsub: dispatch error: client ${writerId} has no socketReader attached`);
+                return;
+            }
+
+            const readerId = server.clients[writerId].socket.socketReader.socket.id;
+            const reader = server.clientsReader[readerId];
             try {
                 const frame = {};
                 frame[attributes.method] = attributes.publish;
                 frame[attributes.channel] = channel;
                 frame[attributes.data] = data;
-                client.write(frame);
+                debug(`pubsub: dispatching: message sent to client ${readerId}`);
+                reader.write(frame);
+                send++;
             } catch(e) {
                 debug(e);
             }
+            next();
+        }, () => {
+            debug(`pubsub: dispatching: sent to ${send} clients`);
         });
     }
 
     function subscribe(channel, callback) {
         debug(`pubsub: server subscribe to ${channel}`);
-        subscribedChannels[channel] = callback;
+        serverSubscribedChannels[channel] = callback;
     }
 
     return {
