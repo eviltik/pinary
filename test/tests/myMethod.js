@@ -1,7 +1,7 @@
 let server;
 
 const descriptor = {
-    title:'myMethod',
+    name:'myMethod',
     description:'Test method'
 };
 

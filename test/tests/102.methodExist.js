@@ -11,7 +11,7 @@ require('./testWrap')(__filename, (test) => {
     const client = new PinaryClient();
 
     function callbackClientTriggerExistingMethod(callback) {
-        client.method('myMethod', (err, result) => {
+        client.rpc('myMethod', (err, result) => {
             test.equal(err, undefined, 'callback: should not return an error');
             test.equal(result, true, 'callback: should return true');
             callback();
@@ -21,7 +21,7 @@ require('./testWrap')(__filename, (test) => {
     async function asyncClientTriggerExistinggMethod() {
         let result;
         try {
-            result = await client.method('myMethod');
+            result = await client.rpcPromise('myMethod');
         } catch(e) {
             test.equal(e, null, 'async/await: should not return an error');
         }

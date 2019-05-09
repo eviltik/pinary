@@ -8,7 +8,7 @@ require('./testWrap')(__filename, (test) => {
     const client = new PinaryClient();
 
     function callbackClientTriggerUnexistingMethod(callback) {
-        client.method('test', (err) => {
+        client.rpc('test', (err) => {
             test.equal(err, 'unknow method test', 'callback: should return error "unknow method test"');
             callback();
         });
@@ -16,7 +16,7 @@ require('./testWrap')(__filename, (test) => {
 
     async function asyncClientTriggerUnexistingMethod() {
         try {
-            await client.method('test');
+            await client.rpcPromise('test');
         } catch(e) {
             test.equal(e, 'unknow method test', 'async/await: should return error "unknow method test"');
         }
