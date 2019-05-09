@@ -1,8 +1,8 @@
-const debug = require('debug')('pinary:server:methods:writer');
+const debug = require('debug')('pinary:server');
 const handler = require('../../handler');
 
 const descriptor = {
-    title:'setWriter',
+    title:'_setWriter',
     description:'Set a TCP connexion as a writer',
     type:'object',
     properties:{

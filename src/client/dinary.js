@@ -78,7 +78,7 @@ function DinaryClient(port, host, options) {
         try {
             debug('connecting reader ...');
             await clientReader.connect();
-            readerId = await clientReader.getReaderId();
+            readerId = await clientReader._getReaderId();
         } catch(e) {
             callback && callback(e);
             return;
@@ -88,7 +88,7 @@ function DinaryClient(port, host, options) {
         try {
             debug(`connecting writer ... (readerId = ${readerId})`);
             await clientWriter.connect();
-            associated = await clientWriter.setWriter(readerId);
+            associated = await clientWriter._setWriter(readerId);
         } catch (e) {
             callback && callback(e);
             return;

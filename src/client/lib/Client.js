@@ -166,7 +166,7 @@ class BaseClient extends EventEmitter {
     requestPush(id, method, params, callback) {
         debug(`requestPush ${id}`);
         this._requests[id] = { method, params, callback };
-        if (method === 'getReaderId' || method === 'setWriter') {
+        if (method === '_getReaderId' || method === '_setWriter') {
             this._requestsQueue.unshift(id);
         } else {
             this._requestsQueue.push(id);
@@ -281,10 +281,10 @@ class BaseClient extends EventEmitter {
         delete this._requests[response.id];
     }
 
-    getReaderId() {
+    _getReaderId() {
         return new Promise((resolve, reject) => {
             const op = {
-                method:'getReaderId',
+                method:'_getReaderId',
                 resolve,
                 reject
             };
@@ -292,10 +292,10 @@ class BaseClient extends EventEmitter {
         });
     }
 
-    setWriter(readerId) {
+    _setWriter(readerId) {
         return new Promise((resolve, reject) => {
             const op = {
-                method:'setWriter',
+                method:'_setWriter',
                 params:{ readerId },
                 resolve,
                 reject
