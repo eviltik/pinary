@@ -15,8 +15,8 @@ require('./testWrap')(__filename, (test) => {
         }
     });
 
-    client1.on('error', () => {
-
+    client1.on('error', (err) => {
+        test.pass('client1 should emit error'+err.message);
     });
 
     async.series([
