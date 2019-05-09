@@ -30,7 +30,7 @@ function handle(params, context, callback) {
         return;
     }
 
-    debug(`${context.session.id}: writer linked with reader ${socketReaderId}`);
+    debug(`${context.session.id}: method _setWriter: writer linked with reader ${socketReaderId}`);
     context.session.socketReader = socketReader;
     callback(null, true);
 }

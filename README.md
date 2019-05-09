@@ -127,21 +127,51 @@ RPC calls are stored in a queue and played when client is connected.
 
 ### Publish/Subscribe (PUBSUB)
 
+#### Client to clients
 ```
 const Server = require('pinary').server;
 const Client = require('pinary').client;
 
 const server = new Server();
-server.start();
-
-// mandatory event
-server.on('error', (err) => {
-    throw err;
-});
+const client1 = new Client();
+const client2 = new Client();
 
 const channel = '/myChannel';
 
+server.start();
+
+client1.connect(() => {
+    client1.subscribe('/bla', (data) => {
+        console.log(data);
+        process.exit();
+    });
+
+    client2.connect(() => {
+        client2.publish('/bla', { foo:'bar' });
+    });
+});
+
+```
+Warning:
+* in actual implementation every published messages are dispatched to all
+connected clients, then, when client received the message, the client check if
+it has a subscription to the channel.
+* The point should be improved, for security and performance reasons.
+* TODO: the server should send messages only for client who subscribed the channel
+
+
+#### Server to clients
+```
+const Server = require('pinary').server;
+const Client = require('pinary').client;
+
+const server = new Server();
 const client = new Client();
+
+const channel = '/myChannel';
+
+server.start();
+
 client.connect(() => {
     client.subscribe(channel, (data) => {
         console.log(data);

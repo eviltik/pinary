@@ -139,12 +139,17 @@ function DinaryClient(port, host, options) {
         clientReader.subscribeTo(channel, callback);
     }
 
+    function publish(channel, data) {
+        clientWriter.publishTo(channel, data, clientWriter._encoder);
+    }
+
     self.connect = promisify(connect);
     self.close = promisify(close);
     self.protocol = options.protocol;
     self.rpc = rpc;
     self.rpcPromise = promisify(rpc);
     self.subscribe = subscribe;
+    self.publish = publish;
 
     return self;
 

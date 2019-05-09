@@ -27,6 +27,7 @@ function Server(options) {
     options = merge(DEFAULT_OPTIONS, options||{});
 
     let server;
+    const subscribedChannels = {};
 
     function rpcIn(task) {
 
@@ -113,6 +114,14 @@ function Server(options) {
                 return;
             }
 
+            if (data.m === '_p') {
+                if (subscribedChannels[data.c]) {
+                    subscribedChannels[data.c](data.d);
+                }
+                publish(data.c, data.d);
+                return;
+            }
+
             if (!methods.exists(data.m)) {
                 debug(`${socket.id}: unknow method ${data.m}`);
                 encoder.write({ id: data.id, error:`unknow method ${data.m}` });
@@ -120,9 +129,9 @@ function Server(options) {
             }
 
             if (data.p) {
-                debug(`${socket.id}: exec ${data.m} ${JSON.stringify(data.p)}`);
+                debug(`${socket.id}: method ${data.m}: exec with params ${JSON.stringify(data.p)}`);
             } else {
-                debug(`${socket.id}: exec ${data.m}`);
+                debug(`${socket.id}: method ${data.m}: exec without params`);
             }
 
             rpcIn({ data, socket, encoder });
@@ -253,14 +262,19 @@ function Server(options) {
         });
     }
 
+    function subscribe(channel, callback) {
+        debug(`pubsub: server subscribe to ${channel}`);
+        subscribedChannels[channel] = callback;
+    }
+
     return {
         start,
         stop,
         registerMethod,
         on,
-        publish
+        publish,
+        subscribe
     };
 }
-
 
 module.exports = Server;

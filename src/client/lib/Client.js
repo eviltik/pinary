@@ -13,9 +13,9 @@ class BaseClient extends EventEmitter {
         super();
 
         if (reader) {
-            this._debug = require('debug')('pinary:client:reader');
+            this._debug = require('debug')('pinary:reader');
         } else {
-            this._debug = require('debug')('pinary:client:writer');
+            this._debug = require('debug')('pinary:writer');
         }
 
         this._options = options || { protocol:'dinary' };
@@ -109,7 +109,8 @@ class BaseClient extends EventEmitter {
     }
 
     onConnect(callback) {
-        this._debug('connected');
+        this._id = this._socket.localAddress+':'+this._socket.localPort;
+        this._debug(`${this._id}: connected`);
         this._isConnected = true;
         this._requestsQueue.resume();
         callback();
@@ -126,14 +127,14 @@ class BaseClient extends EventEmitter {
         }
 
         s.on('timeout', () => {
-            this._debug('timeout');
+            this._debug(`${this._id}: timeout`);
             this.emitEvent('timeout');
             this.close();
         });
 
         s.on('close', () => {
             if (!this._isConnected) return;
-            this._debug('close');
+            this._debug(`${this._id}:  close`);
             this.emitEvent('close');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -142,7 +143,7 @@ class BaseClient extends EventEmitter {
 
         s.on('end', () => {
             if (!this._isConnected) return;
-            this._debug('end');
+            this._debug(`${this._id}: end`);
             this.emitEvent('end');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -152,7 +153,7 @@ class BaseClient extends EventEmitter {
 
         s.on('destroy', () => {
             if (!this._isConnected) return;
-            this._debug('destroy');
+            this._debug(`${this._id}: destroy`);
             this.emitEvent('destroy');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -160,7 +161,7 @@ class BaseClient extends EventEmitter {
         });
 
         s.on('error', (err) => {
-            this._debug('error', err.message);
+            this._debug(`${this._id}: error ${err.message}`);
             callback(err);
             this.emitEvent('error', err);
             this.unpipeSocket(s);
@@ -182,7 +183,7 @@ class BaseClient extends EventEmitter {
     }
 
     request(op) {
-        this._debug(`request ${op.method}`);
+        this._debug(`${this._id}: request method ${op.method}`);
         if (op.callback) {
             this.requestPush(uuid(), op.method, op.params, op.callback);
         } else if (op.reject && op.resolve) {
@@ -247,11 +248,11 @@ class BaseClient extends EventEmitter {
         }
         const pendingRequests = Object.keys(this._requests).length;
         if (pendingRequests>0) {
-            this._debug(`closing client, but missed ${pendingRequests} pending requests`);
+            this._debug(`${this._id}: closing client, but missed ${pendingRequests} pending requests`);
         }
         if (this._socket) {
             this._socket.end();
-            this._debug('client closed');
+            this._debug(`${this._id}: client closed`);
         }
         callback && callback();
     }
@@ -261,12 +262,12 @@ class BaseClient extends EventEmitter {
         if (!response.id) {
 
             if (response.m && response.m === '_p') {
-                this._debug(`received a publish message on channel ${response.c}`);
+                this._debug(`${this._id}: pubsub: data received on channel ${response.c}`);
                 if (this._subscribedChannels[response.c]) {
                     this._subscribedChannels[response.c](response.d);
                 }
             } else {
-                this._debug(`response message don't have any id ! ${JSON.stringify(response)}`);
+                this._debug(`${this._id}: response message don't have any id ! ${JSON.stringify(response)}`);
             }
             return;
         }
@@ -337,8 +338,23 @@ class BaseClient extends EventEmitter {
     }
 
     subscribeTo(channel, callback) {
-        this._debug(`client subscribed to ${channel}`);
+        this._debug(`${this._id}: pubsub: client subscribed to ${channel}`);
         this._subscribedChannels[channel] = callback;
+    }
+
+    publishTo(channel, data, encoder) {
+        if (!this._isConnected) {
+            this._debug(`${this._id}: pubsub: cannot publish: not connected`);
+            return;
+        }
+
+        this._debug(`${this._id}: pubsub: data published in channel ${channel}`);
+
+        encoder.write({
+            m:'_p',
+            c:channel,
+            d:data
+        });
     }
 }
 

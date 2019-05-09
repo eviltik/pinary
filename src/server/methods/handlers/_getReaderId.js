@@ -12,7 +12,7 @@ function handle(params, context, callback) {
     context.session.server.clientsReader[context.session.id] = context.session.server.clients[context.session.id].encoder;
 
     context.session.readerId = uniqId;
-    debug(`client ${context.session.id}: registered as a reader (${uniqId})`);
+    debug(`${context.session.id}: method _getReaderId: client registered as a reader (${uniqId})`);
     callback(null, uniqId);
 }
 
