@@ -185,9 +185,7 @@ class BaseClient extends EventEmitter {
                 op.resolve(result);
             });
         } else {
-            if (!op.params) op.params = {};
-            op.params.nr = 1;
-            this.requestSend(uuid(), op.method, op.params);
+            this.requestPush(uuid(), op.method, op.params);
         }
     }
 
@@ -273,11 +271,20 @@ class BaseClient extends EventEmitter {
 
         if (process.env.DEBUG || process.env.NODE_ENV === 'dev') {
             if (response.error) {
-                debug(response.error.message);
+                if (response.error.message) {
+                    debug(response.error.message);
+                } else {
+                    debug(response.error);
+                }
             }
         }
 
-        r.callback(response.error, response.r || response.result);
+
+        try {
+            r.callback && r.callback(response.error, response.r || response.result);
+        } catch(e) {
+            debug(e);
+        }
         delete this._requests[response.id];
     }
 
