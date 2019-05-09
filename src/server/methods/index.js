@@ -1,36 +1,9 @@
-const debug = require('debug')('pinary:server:methods');
-const path = require('path');
-
 const methods = {};
 const methodsDescriptor = {};
-const reDirname = new RegExp(__dirname+'/');
-const showLog = !process.mainModule.filename.match(/\/cli/);
-
-let cmdName;
-let cmdBase;
-
-let file;
 
 function initialize() {
-
-    const klawSync = require('klaw-sync');
-
-    for (file of klawSync(path.resolve(__dirname+'/handlers'), { depthLimit:1, nodir:true })) {
-
-        if (file.path.match(/README/)) {
-            continue;
-        }
-
-        cmdName = path.basename(file.path).replace(/\.js/, '');
-        cmdBase = file.path.replace(reDirname, '').replace(/\.js/, '');
-        if (cmdBase.match(/\//)) {
-            cmdBase = cmdBase.split('/')[1];
-        }
-        showLog && debug(`method registered ${cmdBase}/${cmdName}`);
-        methods[cmdName] = require(file.path);
-        methodsDescriptor[cmdName] = methods[cmdName].getDescriptor();
-    }
-
+    methods['_getReaderId'] = require('./handlers/_getReaderId');
+    methods['_setWriter'] = require('./handlers/_setWriter');
 }
 
 function getHandler(method, params, context) {

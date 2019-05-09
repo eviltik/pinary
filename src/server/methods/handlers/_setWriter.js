@@ -1,5 +1,5 @@
 const debug = require('debug')('pinary:server');
-const handler = require('../../handler');
+const handler = require('../handler');
 
 const descriptor = {
     name:'_setWriter',
