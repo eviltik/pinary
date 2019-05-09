@@ -1,4 +1,3 @@
-const debug = require('debug')('pinary:client');
 const net = require('net');
 const tls = require('tls');
 const EventEmitter = require('events');
@@ -6,12 +5,18 @@ const hyperid = require('hyperid');
 const async = require('async');
 
 const uuid = hyperid(true);
-const DEFAULT_QUEUE_SIZE = 10;
+const DEFAULT_QUEUE_SIZE = 100;
 
 class BaseClient extends EventEmitter {
 
-    constructor(port, host, options) {
+    constructor(port, host, options, reader) {
         super();
+
+        if (reader) {
+            this._debug = require('debug')('pinary:client:reader');
+        } else {
+            this._debug = require('debug')('pinary:client:writer');
+        }
 
         this._options = options || { protocol:'dinary' };
         this._options.tls = this._options.protocol.match(/s$/);
@@ -27,6 +32,7 @@ class BaseClient extends EventEmitter {
             }
         }
 
+        this._reader = reader;
         this._port = port;
         this._host = host;
 
@@ -39,6 +45,8 @@ class BaseClient extends EventEmitter {
         );
         this._requestsQueue.pause();
         this._requests = {};
+
+        this._subscribedChannels = [];
     }
 
     /*
@@ -101,7 +109,7 @@ class BaseClient extends EventEmitter {
     }
 
     onConnect(callback) {
-        debug('connected');
+        this._debug('connected');
         this._isConnected = true;
         this._requestsQueue.resume();
         callback();
@@ -118,14 +126,14 @@ class BaseClient extends EventEmitter {
         }
 
         s.on('timeout', () => {
-            debug('timeout');
+            this._debug('timeout');
             this.emitEvent('timeout');
             this.close();
         });
 
         s.on('close', () => {
             if (!this._isConnected) return;
-            debug('close');
+            this._debug('close');
             this.emitEvent('close');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -134,7 +142,7 @@ class BaseClient extends EventEmitter {
 
         s.on('end', () => {
             if (!this._isConnected) return;
-            debug('end');
+            this._debug('end');
             this.emitEvent('end');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -144,7 +152,7 @@ class BaseClient extends EventEmitter {
 
         s.on('destroy', () => {
             if (!this._isConnected) return;
-            debug('destroy');
+            this._debug('destroy');
             this.emitEvent('destroy');
             this.unpipeSocket(s);
             this._isConnected = false;
@@ -152,7 +160,7 @@ class BaseClient extends EventEmitter {
         });
 
         s.on('error', (err) => {
-            debug('error', err.message);
+            this._debug('error', err.message);
             callback(err);
             this.emitEvent('error', err);
             this.unpipeSocket(s);
@@ -164,7 +172,7 @@ class BaseClient extends EventEmitter {
     }
 
     requestPush(id, method, params, callback) {
-        debug(`requestPush ${id}`);
+        //this._debug(`requestPush ${id}`);
         this._requests[id] = { method, params, callback };
         if (method === '_getReaderId' || method === '_setWriter') {
             this._requestsQueue.unshift(id);
@@ -174,7 +182,7 @@ class BaseClient extends EventEmitter {
     }
 
     request(op) {
-        debug(`request ${op.method}`);
+        this._debug(`request ${op.method}`);
         if (op.callback) {
             this.requestPush(uuid(), op.method, op.params, op.callback);
         } else if (op.reject && op.resolve) {
@@ -239,11 +247,11 @@ class BaseClient extends EventEmitter {
         }
         const pendingRequests = Object.keys(this._requests).length;
         if (pendingRequests>0) {
-            debug(`closing client, but missed ${pendingRequests} pending requests`);
+            this._debug(`closing client, but missed ${pendingRequests} pending requests`);
         }
         if (this._socket) {
             this._socket.end();
-            debug('client closed');
+            this._debug('client closed');
         }
         callback && callback();
     }
@@ -251,7 +259,15 @@ class BaseClient extends EventEmitter {
     onMessage(response) {
 
         if (!response.id) {
-            debug(`response message don't have any id ! ${JSON.stringify(response)}`);
+
+            if (response.m && response.m === '_p') {
+                this._debug(`received a publish message on channel ${response.c}`);
+                if (this._subscribedChannels[response.c]) {
+                    this._subscribedChannels[response.c](response.d);
+                }
+            } else {
+                this._debug(`response message don't have any id ! ${JSON.stringify(response)}`);
+            }
             return;
         }
 
@@ -261,9 +277,9 @@ class BaseClient extends EventEmitter {
         // fake id sent by the "server" ?
         if (!r) {
             if (response.error) {
-                debug(JSON.stringify(response.error));
+                this._debug(JSON.stringify(response.error));
             } else {
-                debug(JSON.stringify(response));
+                this._debug(JSON.stringify(response));
             }
             this.emitEvent('error', response.error);
             return;
@@ -272,9 +288,9 @@ class BaseClient extends EventEmitter {
         if (process.env.DEBUG || process.env.NODE_ENV === 'dev') {
             if (response.error) {
                 if (response.error.message) {
-                    debug(response.error.message);
+                    this._debug(response.error.message);
                 } else {
-                    debug(response.error);
+                    this._debug(response.error);
                 }
             }
         }
@@ -283,7 +299,7 @@ class BaseClient extends EventEmitter {
         try {
             r.callback && r.callback(response.error, response.r || response.result);
         } catch(e) {
-            debug(e);
+            this._debug(e);
         }
         delete this._requests[response.id];
     }
@@ -318,6 +334,11 @@ class BaseClient extends EventEmitter {
 
     isClosing() {
         return this._socket.closing;
+    }
+
+    subscribeTo(channel, callback) {
+        this._debug(`client subscribed to ${channel}`);
+        this._subscribedChannels[channel] = callback;
     }
 }
 

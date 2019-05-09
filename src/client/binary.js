@@ -34,7 +34,6 @@ class BinaryClient extends Client {
             req.p = params;
         }
         this._encoder.write(req);
-        debug('request', JSON.stringify(req));
     }
 
 }

@@ -6,11 +6,12 @@ const debug = require('debug')('pinary:dinary');
 
 function DinaryClient(port, host, options) {
 
-    const clientReader = new BinaryClient(port, host, options);
+    const clientReader = new BinaryClient(port, host, options, 'reader');
     const clientWriter = new BinaryClient(port, host, options);
     const self = this;
 
     self.options = options || {};
+    self.subscribedChannels = {};
 
     if (!self.options.reconnectInterval) {
         self.options.reconnectInterval = 1000;
@@ -134,11 +135,16 @@ function DinaryClient(port, host, options) {
         });
     }
 
+    function subscribe(channel, callback) {
+        clientReader.subscribeTo(channel, callback);
+    }
+
     self.connect = promisify(connect);
     self.close = promisify(close);
     self.protocol = options.protocol;
     self.rpc = rpc;
     self.rpcPromise = promisify(rpc);
+    self.subscribe = subscribe;
 
     return self;
 

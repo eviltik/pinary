@@ -6,6 +6,7 @@ const errors = require('./errors');
 const debug = require('debug')('pinary:server');
 const merge = require('deepmerge');
 const handler = require('./methods/handler');
+const async = require('async');
 
 const DEFAULT_OPTIONS = {
     useTLS:false,
@@ -79,11 +80,13 @@ function Server(options) {
             debug(`${socket.id}: client socket end`);
             server.clients[socket.id].socket.destroy();
             delete server.clients[socket.id];
+            delete server.clientsReader[socket.id];
         });
 
         socket.on('error', err => {
             debug(`${socket.id}: ${err.message}`);
             delete server.clients[socket.id];
+            delete server.clientsReader[socket.id];
         });
 
         socket.once('data', () => {
@@ -177,6 +180,8 @@ function Server(options) {
         }
 
         server.clients = {};
+        server.clientsReader = {};
+
         server.on('listening', _onServerListen);
         server.on('error', onServerError);
 
@@ -197,12 +202,13 @@ function Server(options) {
         try {
             let id;
             for (id in server.clients) {
+                debug(`server stopping: disconnecting client ${id}`);
                 server.clients[id].encoder.write(JSON.stringify({ error:errors.SERVER_SHUTDOWN }));
                 server.clients[id].socket.end();
                 server.clients[id].socket.destroy();
-                debug(`server stopping: disconnecting client ${id}`);
-                closed++;
                 delete server.clients[id];
+                delete server.clientsReader[id];
+                closed++;
             }
         } catch(e) {
             debug(e);
@@ -233,11 +239,26 @@ function Server(options) {
         server.on(eventName, fn);
     }
 
+    function publish(channel, data) {
+        async.mapValues(server.clientsReader, (client) => {
+            try {
+                client.write({
+                    m:'_p',
+                    c:channel,
+                    d:data
+                });
+            } catch(e) {
+                debug(e);
+            }
+        });
+    }
+
     return {
         start,
         stop,
         registerMethod,
-        on
+        on,
+        publish
     };
 }
 
