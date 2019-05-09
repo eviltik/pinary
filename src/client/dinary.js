@@ -121,25 +121,24 @@ function DinaryClient(port, host, options) {
         }
     }
 
-    function method(method, params, callback) {
+    function rpc(method, params, callback) {
         if (typeof params === 'function') {
             callback = params;
             params = null;
         }
 
-        const op = {
+        return clientWriter.request({
             method,
             params,
             callback
-        };
-
-        return clientWriter.request(op);
+        });
     }
 
     self.connect = promisify(connect);
     self.close = promisify(close);
     self.protocol = options.protocol;
-    self.method = promisify(method);
+    self.rpc = rpc;
+    self.rpcPromise = promisify(rpc);
 
     return self;
 
