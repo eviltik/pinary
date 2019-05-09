@@ -8,15 +8,22 @@
 
 ## Introduction
 
-Yet another JSONRPC client/server
+Yet another RPC client and server, with publish/subscribe (redis like)
 
-* Use TCP or TLS (under the hood, 2 sockets are used, i.e writer and reader)
-* Binary frames
-* Optional ZLIB compression
-* Minimalistic JSON Schema implementation
-* Handle Max Clients
-* Support callback, promises and async/await syntax
-* Client automatic reconnect
+* Server
+  * Use TCP or TLS (under the hood, 2 sockets are used, i.e writer and reader)
+  * Binary frames (fast)
+  * Optional ZLIB compression
+  * Minimalistic JSON Schema implementation (input integrity)
+  * Handle Max Clients
+  * Support callback, promises and async/await syntax
+
+* Client
+  * Automatic reconnect
+  * Internal RPC calls queue
+    * Allow lazy client connect
+    * store calls when not connected and play calls when reconnect
+
 
 ## Install
 
@@ -93,7 +100,7 @@ async function() {
 
 ```
 // using callback
-client.method('myMethod', (err, result) => {
+client.rpc('myMethod', (err, result) => {
     if (err) throw err;
     console.log(result);
 });
@@ -102,7 +109,7 @@ client.method('myMethod', (err, result) => {
 async function letsgo() {
     let result;
     try {
-        result = await client.method('myMethod');
+        result = await client.rpcPromise('myMethod');
     } catch(e) {
         // something wrong
     }
@@ -110,8 +117,12 @@ async function letsgo() {
 }
 ```
 
+Note: if not yet connected or while the client is trying to reconnect,
+RPC calls are stored in a queue and played when client is connected.
+
+
 ## TODO
 * promises tests
 * finish doc
-  * emitter events (both client and server)
-  * server methods registration (see test/tests/102.methodExist.js for moment)
+  * events emitted (both client and server)
+  * server methods registration (see test/tests/102.methodExist.js, or examples/ for moment)
