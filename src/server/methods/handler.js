@@ -48,7 +48,7 @@ function Method(descriptor, handler) {
 
         // request has parameters, but the descriptor don't have
         if (unwantedProperties(params)) {
-            triggerError(`method "${descriptor.title}" does NOT wait for any property`, callback);
+            triggerError(`method "${descriptor.name}" does NOT wait for any property`, callback);
             return;
         }
 
@@ -62,7 +62,7 @@ function Method(descriptor, handler) {
 
         // request has more parameters than expected in the descriptor
         if (paramsCount>descriptorPropertiesCount) {
-            triggerError(`method "${descriptor.title}": too many properties, expected ${descriptorPropertiesCount}, find ${paramsCount}`, callback);
+            triggerError(`method "${descriptor.name}": too many properties, expected ${descriptorPropertiesCount}, find ${paramsCount}`, callback);
             return;
         }
 
@@ -86,9 +86,9 @@ function Method(descriptor, handler) {
             // a mandatory property is missing
             if (descriptor.required.indexOf(prop)>=0 && params[prop] === undefined) {
                 if (property.alias) {
-                    triggerError(`method "${descriptor.title}": property ${prop} (alias ${property.alias}) is mandatory`, callback);
+                    triggerError(`method "${descriptor.name}": property ${prop} (alias ${property.alias}) is mandatory`, callback);
                 } else {
-                    triggerError(`method "${descriptor.title}": property ${prop} is mandatory`, callback);
+                    triggerError(`method "${descriptor.name}": property ${prop} is mandatory`, callback);
                 }
                 return;
             }
@@ -100,7 +100,7 @@ function Method(descriptor, handler) {
 
             // check type
             if (property.type != typeof params[prop]) {
-                triggerError(`method "${descriptor.title}": property "${prop}" should be a ${property.type}, found ${typeof params[prop]}`, callback);
+                triggerError(`method "${descriptor.name}": property "${prop}" should be a ${property.type}, found ${typeof params[prop]}`, callback);
                 return;
             }
 
@@ -108,7 +108,7 @@ function Method(descriptor, handler) {
                 if (property.pattern) {
                     // patternRe is the compiled version of the regexp, see _compileDescriptorParametersRegexp
                     if (!property.patternRe.test(params[prop])) {
-                        triggerError(`method "${descriptor.title}": property "${prop}" does not match regular expression ${property.pattern}`, callback);
+                        triggerError(`method "${descriptor.name}": property "${prop}" does not match regular expression ${property.pattern}`, callback);
                         return;
                     }
                 }
@@ -117,12 +117,12 @@ function Method(descriptor, handler) {
             if (property.type === 'number') {
                 // greater than
                 if (typeof property.minimum === 'number' && params[prop]<property.minimum) {
-                    triggerError(`method "${descriptor.title}": property "${prop}" should be > ${property.minimum}`, callback);
+                    triggerError(`method "${descriptor.name}": property "${prop}" should be > ${property.minimum}`, callback);
                     return;
                 }
                 // lower than
                 if (typeof property.maximum === 'number' && params[prop]>property.maximum) {
-                    triggerError(`method "${descriptor.title}": property "${prop}" should be < ${property.maximum}`, callback);
+                    triggerError(`method "${descriptor.name}": property "${prop}" should be < ${property.maximum}`, callback);
                     return;
                 }
             }
@@ -156,12 +156,12 @@ function Method(descriptor, handler) {
             oneOfStr = oneOfStr.join('" OR "');
 
             if (multipleOneOfFound) {
-                triggerError(`method "${descriptor.title}": mandatory properties conflict, please specify properties "${oneOfStr}"`, callback);
+                triggerError(`method "${descriptor.name}": mandatory properties conflict, please specify properties "${oneOfStr}"`, callback);
                 return;
             }
 
             if (!oneOfMatch) {
-                triggerError(`method "${descriptor.title}": mandatory properties are missing (at least "${oneOfStr}")`, callback);
+                triggerError(`method "${descriptor.name}": mandatory properties are missing (at least "${oneOfStr}")`, callback);
                 return;
             }
         }
@@ -170,14 +170,7 @@ function Method(descriptor, handler) {
         // Sanity Check passed successfully
         //
 
-
-        if (params.nr) {
-            // if "nr" (like "no response") passed in params, override callback with an empty one
-            callback = () => {};
-        }
-
         handler(params, context, callback);
-
     }
 
     function getDescriptor() {
@@ -205,7 +198,7 @@ function Method(descriptor, handler) {
     _compileDescriptorParametersRegexp();
 
     return {
-        name:descriptor.title,
+        name:descriptor.name,
         handle,
         getDescriptor
     };

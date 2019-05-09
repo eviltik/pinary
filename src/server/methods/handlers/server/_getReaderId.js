@@ -2,7 +2,7 @@ const debug = require('debug')('pinary:server');
 const handler = require('../../handler');
 
 const descriptor = {
-    title:'_getReaderId',
+    name:'_getReaderId',
     description:'Set a TCP connexion as a reader, return an reader id',
 };
 
