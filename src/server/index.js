@@ -97,8 +97,8 @@ function Server(options) {
 
         decoder.on('message', data => {
 
-            if (server._connections>options.maxClients) {
-                debug(`${socket.id}: refusing connection, number of connection: ${server._connections-1}, allowed: ${options.maxClients}`);
+            if (server._connections>(options.maxClients*2)) {
+                debug(`${socket.id}: refusing connection, number of connection: ${server._connections-1}, allowed: ${options.maxClients*2}`);
                 encoder.write({ id: data.id, error:errors.MAX_CLIENT_REACHED });
                 socket.end();
                 return;
@@ -138,7 +138,7 @@ function Server(options) {
 
     function start(callback) {
 
-        debug(`server starting ... (${options.host}:${options.port} maxClients ${options.maxClients})`);
+        debug(`server starting ... (${options.host}:${options.port} maxClients ${options.maxClients*2})`);
 
         methods.initialize();
 
@@ -149,7 +149,7 @@ function Server(options) {
                 throw new Error(err);
             }
 
-            debug(`server started (maxClients ${options.maxClients})`);
+            debug(`server started (maxClients ${options.maxClients*2})`);
             callback && callback();
         }
 
