@@ -4,7 +4,7 @@ const EventEmitter = require('events');
 const hyperid = require('hyperid');
 const async = require('async');
 const attributes = require('../../attributes');
-
+const frame = require('../../frame')
 const uuid = hyperid(true);
 const DEFAULT_QUEUE_SIZE = 100;
 
@@ -350,11 +350,7 @@ class BaseClient extends EventEmitter {
         }
 
         this._debug(`${this._id}: pubsub: inform server for subscription to ${channel}`);
-
-        const frame = {};
-        frame[attributes.method] = attributes.subscribe;
-        frame[attributes.channel] = channel;
-        encoder.write(frame);
+        encoder.write(frame.subscribe(channel));
     }
 
     publishTo(channel, data, encoder) {
@@ -364,12 +360,7 @@ class BaseClient extends EventEmitter {
         }
 
         this._debug(`${this._id}: pubsub: data published in channel ${channel}`);
-
-        const frame = {};
-        frame[attributes.method] = attributes.publish;
-        frame[attributes.channel] = channel;
-        frame[attributes.data] = data;
-        encoder.write(frame);
+        encoder.write(frame.publish(channel, data));
     }
 }
 

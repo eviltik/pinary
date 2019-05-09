@@ -7,6 +7,7 @@ const merge = require('deepmerge');
 const handler = require('./methods/handler');
 const async = require('async');
 const attributes = require('../attributes');
+const frame = require('../frame');
 
 const DEFAULT_OPTIONS = {
     useTLS:false,
@@ -30,34 +31,35 @@ function Server(options) {
     const serverSubscribedChannels = {};
     const clientsSubscribedChannel = {};
 
-    function rpcIn(task) {
+    function RPCCall(task) {
 
-        methods.exec(task.data.m, task.data.p, { server, session:task.socket }, (err, result) => {
+        methods.exec(
+            task.data.m,
+            task.data.p,
+            { server, session:task.socket },
+            (err, result) => {
 
-            if (err) {
+                if (err) {
 
-                if (err instanceof Error) {
-                    const frame = {};
-                    frame[attributes.id] = task.data.id;
-                    frame[attributes.error] = 'ERROR_CODE_PARAMETER';
-                    task.encoder.write(frame);
-                    debug(`${task.socket.id}: ${err.stack}`);
+                    if (err instanceof Error) {
+                        task.encoder.write(frame.error(task.data.id, 'ERROR_CODE_PARAMETER'));
+                        debug(`${task.socket.id}: ${err.stack}`);
+                        return;
+                    }
+
+                    task.encoder.write(frame.error(task.data.id, err));
+                    debug(`${task.socket.id}: ${err.message}`);
                     return;
                 }
 
-                const frame = {};
-                frame[attributes.id] = task.data.id;
-                frame[attributes.error] = err;
-                task.encoder.write(frame);
-                debug(`${task.socket.id}: ${err.message}`);
-                return;
+                task.encoder.write(frame.result(task.data.id, result));
             }
+        );
+    }
 
-            const frame = {};
-            frame[attributes.id] = task.data.id;
-            frame[attributes.result] = result;
-            task.encoder.write(frame);
-        });
+    function removeClient(socketId) {
+        delete server.clients[socketId];
+        delete server.clientsReader[socketId];
     }
 
     function onServerError(err) {
@@ -79,14 +81,12 @@ function Server(options) {
         socket.on('end', () => {
             debug(`${socket.id}: client socket end`);
             server.clients[socket.id].socket.destroy();
-            delete server.clients[socket.id];
-            delete server.clientsReader[socket.id];
+            removeClient(socket.id);
         });
 
         socket.on('error', err => {
             debug(`${socket.id}: ${err.message}`);
-            delete server.clients[socket.id];
-            delete server.clientsReader[socket.id];
+            removeClient(socket.id);
         });
 
         socket.once('data', () => {
@@ -108,20 +108,14 @@ function Server(options) {
 
             if (server._connections>(options.maxClients*2)) {
                 debug(`${socket.id}: refusing connection, number of connection: ${server._connections-1}, allowed: ${options.maxClients*2}`);
-                const frame = {};
-                frame[attributes.id] = mid;
-                frame[attributes.error] = 'MAX_CLIENT_REACHED';
-                encoder.write(frame);
+                encoder.write(frame.error(mid, 'MAX_CLIENT_REACHED'));
                 socket.end();
                 return;
             }
 
             if (!mmethod) {
                 debug(`${socket.id}: missing method in the payload`);
-                const frame = {};
-                frame[attributes.id] = mid;
-                frame[attributes.error] = 'MISSING_METHOD_ATTRIBUTE';
-                encoder.write(frame);
+                encoder.write(frame.error(mid, 'MISSING_METHOD_ATTRIBUTE'));
                 return;
             }
 
@@ -144,10 +138,7 @@ function Server(options) {
 
             if (!methods.exists(mmethod)) {
                 debug(`${socket.id}: unknow method ${mmethod}`);
-                const frame = {};
-                frame[attributes.id] = mid;
-                frame[attributes.error] = `UNKNOW_METHOD ${mmethod}`;
-                encoder.write(frame);
+                encoder.write(frame.error(mid, `UNKNOW_METHOD ${mmethod}`));
                 return;
             }
 
@@ -157,7 +148,7 @@ function Server(options) {
                 debug(`${socket.id}: method ${mmethod}: exec without params`);
             }
 
-            rpcIn({ data, socket, encoder });
+            RPCCall({ data, socket, encoder });
         });
 
         decoder.on('error', err => {
@@ -238,8 +229,7 @@ function Server(options) {
                 server.clients[id].encoder.write(JSON.stringify({ error:'SERVER_SHUTDOWN' }));
                 server.clients[id].socket.end();
                 server.clients[id].socket.destroy();
-                delete server.clients[id];
-                delete server.clientsReader[id];
+                removeClient(id);
                 closed++;
             }
         } catch(e) {
@@ -299,12 +289,8 @@ function Server(options) {
             const readerId = server.clients[writerId].socket.socketReader.socket.id;
             const reader = server.clientsReader[readerId];
             try {
-                const frame = {};
-                frame[attributes.method] = attributes.publish;
-                frame[attributes.channel] = channel;
-                frame[attributes.data] = data;
                 debug(`pubsub: dispatching: message sent to client ${readerId}`);
-                reader.write(frame);
+                reader.write(frame.publish(channel, data));
                 send++;
             } catch(e) {
                 debug(e);
