@@ -1,18 +1,19 @@
+const debug = require('debug')('pinary:client');
 const net = require('net');
 const tls = require('tls');
 const EventEmitter = require('events');
-const debug = require('debug')('pinary:client');
-
 const hyperid = require('hyperid');
+const async = require('async');
+
 const uuid = hyperid(true);
+const DEFAULT_QUEUE_SIZE = 10;
 
 class BaseClient extends EventEmitter {
 
     constructor(port, host, options) {
         super();
 
-        this._options = options || { protocol:'binarys' };
-        this.protocol = this._options.protocol;
+        this._options = options || { protocol:'dinary' };
         this._options.tls = this._options.protocol.match(/s$/);
 
         if (!port) {
@@ -30,13 +31,34 @@ class BaseClient extends EventEmitter {
         this._host = host;
 
         this._isConnected = false;
-        this._requests = {};
         this._eventsByName = null;
+
+        this._requestsQueue = async.queue(
+            this.handleRequestsQueue.bind(this),
+            options.queueSize||DEFAULT_QUEUE_SIZE
+        );
+        this._requestsQueue.pause();
+        this._requests = {};
     }
 
     /*
      * Privates
      */
+
+    handleRequestsQueue(id, callback) {
+        if (!this._requests[id] || !this._isConnected) {
+            callback();
+            return;
+        }
+
+        this.requestSend(
+            id,
+            this._requests[id].method,
+            this._requests[id].params
+        );
+
+        callback();
+    }
 
     eventExists(eventName) {
 
@@ -81,6 +103,7 @@ class BaseClient extends EventEmitter {
     onConnect(callback) {
         debug('connected');
         this._isConnected = true;
+        this._requestsQueue.resume();
         callback();
     }
 
@@ -106,6 +129,7 @@ class BaseClient extends EventEmitter {
             this.emitEvent('close');
             this.unpipeSocket(s);
             this._isConnected = false;
+            this._requestsQueue.pause();
         });
 
         s.on('end', () => {
@@ -114,6 +138,7 @@ class BaseClient extends EventEmitter {
             this.emitEvent('end');
             this.unpipeSocket(s);
             this._isConnected = false;
+            this._requestsQueue.pause();
             s.destroy();
         });
 
@@ -123,6 +148,7 @@ class BaseClient extends EventEmitter {
             this.emitEvent('destroy');
             this.unpipeSocket(s);
             this._isConnected = false;
+            this._requestsQueue.pause();
         });
 
         s.on('error', (err) => {
@@ -138,15 +164,13 @@ class BaseClient extends EventEmitter {
     }
 
     requestPush(id, method, params, callback) {
-        if (!this._isConnected) {
-            callback(new Error('not connected'));
-            return;
-        }
-
         debug(`requestPush ${id}`);
-
         this._requests[id] = { method, params, callback };
-        this.requestSend(id, method, params);
+        if (method === 'getReaderId' || method === 'setWriter') {
+            this._requestsQueue.unshift(id);
+        } else {
+            this._requestsQueue.push(id);
+        }
     }
 
     request(op) {
