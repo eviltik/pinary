@@ -1,6 +1,7 @@
-const debug = require('debug')('pinary:client');
+//const debug = require('debug')('pinary:client');
 const missive = require('missive');
 const Client = require('./lib/Client');
+const attributes = require('../attributes');
 
 const ZLIB = false;
 
@@ -29,9 +30,11 @@ class BinaryClient extends Client {
     }
 
     requestSend(id, method, params) {
-        const req = { id, m:method };
+        const req = {};
+        req.id = id;
+        req[attributes.method] = method;
         if (params) {
-            req.p = params;
+            req[attributes.params] = params;
         }
         this._encoder.write(req);
     }

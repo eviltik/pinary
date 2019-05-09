@@ -3,6 +3,7 @@ const tls = require('tls');
 const EventEmitter = require('events');
 const hyperid = require('hyperid');
 const async = require('async');
+const attributes = require('../../attributes');
 
 const uuid = hyperid(true);
 const DEFAULT_QUEUE_SIZE = 100;
@@ -261,10 +262,10 @@ class BaseClient extends EventEmitter {
 
         if (!response.id) {
 
-            if (response.m && response.m === '_p') {
-                this._debug(`${this._id}: pubsub: data received on channel ${response.c}`);
-                if (this._subscribedChannels[response.c]) {
-                    this._subscribedChannels[response.c](response.d);
+            if (response[attributes.method] && response[attributes.method] === attributes.publish) {
+                this._debug(`${this._id}: pubsub: data received on channel ${response[attributes.channel]}`);
+                if (this._subscribedChannels[response[attributes.channel]]) {
+                    this._subscribedChannels[response[attributes.channel]](response[attributes.data]);
                 }
             } else {
                 this._debug(`${this._id}: response message don't have any id ! ${JSON.stringify(response)}`);
@@ -277,28 +278,28 @@ class BaseClient extends EventEmitter {
         // no callback stored for this request ?
         // fake id sent by the "server" ?
         if (!r) {
-            if (response.error) {
-                this._debug(JSON.stringify(response.error));
+            if (response[attributes.error]) {
+                this._debug(JSON.stringify(response[attributes.error]));
             } else {
                 this._debug(JSON.stringify(response));
             }
-            this.emitEvent('error', response.error);
+            this.emitEvent('error', response[attributes.error]);
             return;
         }
 
         if (process.env.DEBUG || process.env.NODE_ENV === 'dev') {
-            if (response.error) {
-                if (response.error.message) {
-                    this._debug(response.error.message);
+            if (response[attributes.error]) {
+                if (response[attributes.error].message) {
+                    this._debug(response[attributes.error].message);
                 } else {
-                    this._debug(response.error);
+                    this._debug(response[attributes.error]);
                 }
             }
         }
 
 
         try {
-            r.callback && r.callback(response.error, response.r || response.result);
+            r.callback && r.callback(response[attributes.error], response[attributes.result]);
         } catch(e) {
             this._debug(e);
         }
@@ -350,11 +351,11 @@ class BaseClient extends EventEmitter {
 
         this._debug(`${this._id}: pubsub: data published in channel ${channel}`);
 
-        encoder.write({
-            m:'_p',
-            c:channel,
-            d:data
-        });
+        const frame = {};
+        frame[attributes.method] = attributes.publish;
+        frame[attributes.channel] = channel;
+        frame[attributes.data] = data;
+        encoder.write(frame);
     }
 }
 

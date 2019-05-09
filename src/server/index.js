@@ -2,11 +2,11 @@ const methods = require('./methods/');
 const net = require('net');
 const tls = require('tls');
 const missive = require('missive');
-const errors = require('./errors');
 const debug = require('debug')('pinary:server');
 const merge = require('deepmerge');
 const handler = require('./methods/handler');
 const async = require('async');
+const attributes = require('../attributes');
 
 const DEFAULT_OPTIONS = {
     useTLS:false,
@@ -101,37 +101,52 @@ function Server(options) {
 
         decoder.on('message', data => {
 
+            const mid = data[attributes.id];
+            const mmethod = data[attributes.method];
+            const mparams = data[attributes.params];
+            const mdata = data[attributes.data];
+
             if (server._connections>(options.maxClients*2)) {
                 debug(`${socket.id}: refusing connection, number of connection: ${server._connections-1}, allowed: ${options.maxClients*2}`);
-                encoder.write({ id: data.id, error:errors.MAX_CLIENT_REACHED });
+                const frame = {};
+                frame[attributes.id] = mid;
+                frame[attributes.error] = 'MAX_CLIENT_REACHED';
+                encoder.write(frame);
                 socket.end();
                 return;
             }
 
-            if (!data.m) {
+            if (!mmethod) {
                 debug(`${socket.id}: missing method in the payload`);
-                encoder.write({ id: data.id, error:'missing method attribute' });
+                const frame = {};
+                frame[attributes.id] = mid;
+                frame[attributes.error] = 'MISSING_METHOD_ATTRIBUTE';
+                encoder.write(frame);
                 return;
             }
 
-            if (data.m === '_p') {
-                if (subscribedChannels[data.c]) {
-                    subscribedChannels[data.c](data.d);
+            if (mmethod === attributes.publish) {
+                const mchannel = data[attributes.channel];
+                if (subscribedChannels[mchannel]) {
+                    subscribedChannels[mchannel](mdata);
                 }
-                publish(data.c, data.d);
+                publish(mchannel, mdata);
                 return;
             }
 
-            if (!methods.exists(data.m)) {
-                debug(`${socket.id}: unknow method ${data.m}`);
-                encoder.write({ id: data.id, error:`unknow method ${data.m}` });
+            if (!methods.exists(mmethod)) {
+                debug(`${socket.id}: unknow method ${mmethod}`);
+                const frame = {};
+                frame[attributes.id] = mid;
+                frame[attributes.error] = `UNKNOW_METHOD ${mmethod}`;
+                encoder.write(frame);
                 return;
             }
 
-            if (data.p) {
-                debug(`${socket.id}: method ${data.m}: exec with params ${JSON.stringify(data.p)}`);
+            if (mparams) {
+                debug(`${socket.id}: method ${mmethod}: exec with params ${JSON.stringify(mparams)}`);
             } else {
-                debug(`${socket.id}: method ${data.m}: exec without params`);
+                debug(`${socket.id}: method ${mmethod}: exec without params`);
             }
 
             rpcIn({ data, socket, encoder });
@@ -251,11 +266,11 @@ function Server(options) {
     function publish(channel, data) {
         async.mapValues(server.clientsReader, (client) => {
             try {
-                client.write({
-                    m:'_p',
-                    c:channel,
-                    d:data
-                });
+                const frame = {};
+                frame[attributes.method] = attributes.publish;
+                frame[attributes.channel] = channel;
+                frame[attributes.data] = data;
+                client.write(frame);
             } catch(e) {
                 debug(e);
             }

@@ -31,7 +31,7 @@ require('./testWrap')(__filename, (test) => {
         },
         next => {
             server.publish('/bla', 'foo');
-            setTimeout(next, 1);
+            setTimeout(next, 10);
         },
         next => {
             if (received) {

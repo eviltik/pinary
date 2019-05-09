@@ -9,7 +9,7 @@ require('./testWrap')(__filename, (test) => {
 
     function callbackClientTriggerUnexistingMethod(callback) {
         client.rpc('test', (err) => {
-            test.equal(err, 'unknow method test', 'callback: should return error "unknow method test"');
+            test.equal(err, 'UNKNOW_METHOD test', 'callback: should return error "unknow method test"');
             callback();
         });
     }
@@ -18,7 +18,7 @@ require('./testWrap')(__filename, (test) => {
         try {
             await client.rpcPromise('test');
         } catch(e) {
-            test.equal(e, 'unknow method test', 'async/await: should return error "unknow method test"');
+            test.equal(e, 'UNKNOW_METHOD test', 'async/await: should return error "unknow method test"');
         }
     }
 

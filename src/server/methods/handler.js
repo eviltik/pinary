@@ -1,15 +1,16 @@
 const debug = require('debug')('pinary:server:methods:handler');
-const errors = require('../errors');
 
 function triggerError(msg, callback) {
-    callback({ code:errors.ERROR_CODE_PARAMETER, message:msg });
+    callback({ error:msg });
     debug(msg);
 }
 
+/*
 function triggerErrorInternal(msg, callback) {
-    callback({ code:errors.ERROR_CODE_INTERNAL, message:msg });
+    callback({ error:msg });
     debug(msg);
 }
+*/
 
 function Method(descriptor, handler) {
 
@@ -205,17 +206,11 @@ function Method(descriptor, handler) {
 }
 
 function internalError(msg) {
-    return {
-        code: errors.ERROR_CODE_INTERNAL,
-        message: msg
-    };
+    return { error: msg };
 }
 
 function parameterError(msg) {
-    return {
-        code: errors.ERROR_CODE_PARAMETER,
-        message: msg
-    };
+    return { error: msg };
 }
 
 module.exports = {
