@@ -215,7 +215,6 @@ class BaseClient extends EventEmitter {
             callback && callback();
             return;
         }
-        //process.nextTick(() => {
         const pendingRequests = Object.keys(this._requests).length;
         if (pendingRequests>0) {
             debug(`closing client, but missed ${pendingRequests} pending requests`);
@@ -225,7 +224,6 @@ class BaseClient extends EventEmitter {
             debug('client closed');
         }
         callback && callback();
-        //});
     }
 
     onMessage(response) {
