@@ -56,6 +56,9 @@ function DinaryClient(port, host, options) {
     });
 
     function reconnect() {
+        if (clientReader.isClosing()) {
+            return;
+        }
         self.retryCount+=1;
         self.emit('reconnecting', self.retryCount);
         self.connect((err) => {
