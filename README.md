@@ -8,21 +8,22 @@
 
 ## Introduction
 
-Yet another RPC client and server, with publish/subscribe (redis like)
+Yet another RPC client and server, with minimalistic publish/subscribe implementation.
 
 * Server
-  * Use TCP or TLS (under the hood, 2 sockets are used, i.e writer and reader)
+  * TCP or TLS, as you want (TLS require certificates, see https://github.com/jfromaniello/selfsigned )
   * Binary frames (fast)
   * Optional ZLIB compression
   * Minimalistic JSON Schema implementation (input integrity)
   * Handle Max Clients
   * Support callback, promises and async/await syntax
+  * Basic publish/subscribe support
 
 * Client
   * Automatic reconnect
   * Internal RPC calls queue
     * Allow lazy client connect
-    * store calls when not connected and play calls when reconnect
+    * Store calls when not connected and play calls when reconnect
 
 
 ## Install
@@ -48,7 +49,7 @@ const server = new PinaryServer();
 |-----------------------|-------------------------------|----------------
 | useTLS                | false                         | Use clear TCP or TLS    
 | useZLIB               | false                         | Use ZLIB compression
-| maxClients            | 10                            | Maximum number of simultaneous TCP connections
+| maxClients (1)        | 10                            | Maximum number of simultaneous TCP connections
 | timeoutData           | 1000                          | Delay before socket close if no data sent, in milliseconds
 | host                  | 0.0.0.0                       | Listening IP/host
 | port                  | 65000 for TCP, 65001 for TLS  | Listening port
@@ -57,6 +58,9 @@ const server = new PinaryServer();
 | ca                    | null                          | TLS: certificate authority (string of array of string)
 | secureProtocol        | TLSv1_2_method                | TLS: cipher
 | rejectUnauthorized    | false                         | TLS: allow self signed certificates, or not
+
+(1) under the hood, a "client" is in fact 2 sockets, one for writing, one for reading.
+
 
 ## Client
 
@@ -76,6 +80,7 @@ const client = new PinaryClient();
 | reconnectInterval                     | 500                           | milliseconds   |
 | reconnectMaxAttempts                  | 5                             |                |
 | reconnectWaitAfterMaxAttempsReached   | 2000                          | milliseconds   |
+| queueSize                             | 100                           | store rpc calls limit when not connected/disconnected |
 
 ### Client: connecting to the server
 ```
@@ -119,6 +124,36 @@ async function letsgo() {
 
 Note: if not yet connected or while the client is trying to reconnect,
 RPC calls are stored in a queue and played when client is connected.
+
+### Publish/Subscribe (PUBSUB)
+
+```
+const Server = require('pinary').server;
+const Client = require('pinary').client;
+
+const server = new Server();
+server.start();
+
+// mandatory event
+server.on('error', (err) => {
+    throw err;
+});
+
+const channel = '/myChannel';
+
+const client = new Client();
+client.connect(() => {
+    client.subscribe(channel, (data) => {
+        console.log(data);
+        process.exit();
+    });
+
+    server.publish(channel, { foo:'bar' });
+});
+```
+
+The actual implementation is minimalistic:
+* a channel is considered as an ID, you cannot use wildcards, like redis
 
 
 ## TODO
