@@ -1,7 +1,7 @@
 {
   "name": "pinary",
   "version": "1.2.1",
-  "description": "RPC other TCP/TLS using binary frames",
+  "description": "RPC other TCP/TLS and PubSub",
   "main": "index.js",
   "scripts": {
     "test": "node test/index.js"
