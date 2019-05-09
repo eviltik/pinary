@@ -37,19 +37,19 @@ const server = new PinaryServer();
 
 ```
 
-| Option                | Default                       |       
-|-----------------------|-------------------------------|
-| useTLS                | false                         |         
-| useZLIB               | false                         |
-| maxClients            | 10                            |      
-| host                  | 0.0.0.0                       |
-| port                  | 65000 for TCP, 65001 for TLS  |
-| key                   | null                          |
-| cert                  | null                          |
-| ca                    | null                          |
-| secureProtocol        | TLSv1_2_method                |
-| rejectUnauthorized    | false                         |
-
+| Option                | Default                       |  Notes  
+|-----------------------|-------------------------------|----------------
+| useTLS                | false                         | Use clear TCP or TLS    
+| useZLIB               | false                         | Use ZLIB compression
+| maxClients            | 10                            | Maximum number of simultaneous TCP connections
+| timeoutData           | 1000                          | Delay before socket close if no data sent, in milliseconds
+| host                  | 0.0.0.0                       | Listening IP/host
+| port                  | 65000 for TCP, 65001 for TLS  | Listening port
+| key                   | null                          | TLS: private key
+| cert                  | null                          | TLS: public key
+| ca                    | null                          | TLS: certificate authority (string of array of string)
+| secureProtocol        | TLSv1_2_method                | TLS: cipher
+| rejectUnauthorized    | false                         | TLS: allow self signed certificates, or not
 
 ## Client
 
@@ -66,9 +66,9 @@ const client = new PinaryClient();
 ```
 | Option                                | Default                       | Note |      
 |---------------------------------------|-------------------------------|------|
-| reconnectInterval                     | 500                           | ms   |
-| reconnectMaxAttempts                  | 5                             |      |
-| reconnectWaitAfterMaxAttempsReached   | 2000                          | ms   |
+| reconnectInterval                     | 500                           | milliseconds   |
+| reconnectMaxAttempts                  | 5                             |                |
+| reconnectWaitAfterMaxAttempsReached   | 2000                          | milliseconds   |
 
 ### Client: connecting to the server
 ```
