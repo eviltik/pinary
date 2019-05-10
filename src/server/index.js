@@ -215,14 +215,6 @@ function Server(options) {
         server.on('listening', _onServerListen);
         server.on('error', onServerError);
 
-        server.getMaxClients = () => {
-            return options.maxClients;
-        };
-
-        server.setMaxClients = m => {
-            options.maxClients = m;
-        };
-
         server.listen(options.port, options.host);
 
     }
