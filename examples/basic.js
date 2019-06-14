@@ -26,7 +26,6 @@ server.registerMethod(
 );
 
 const client = new Client();
-client.connect();
 
 // no callback, test1 is not a registered method,
 // fail silently (because no callback)
@@ -40,15 +39,8 @@ client.rpc('test2', { foo:'bar' }, (err, result) => {
     console.log(result);
 });
 
-// async/await, test3 is not a registered method
-(async function test() {
-    try {
-        console.log('calling rpc "test3"');
-        await client.rpcPromise('test3');
-    } catch(e) {
-        console.log(e);
-    }
-
-    // clean exit (not mandatory)
+client.rpc('test2', { foo:'bar' }, (err, result) => {
+    if (err) console.log(err);
+    console.log(result);
     client.close(process.exit);
-})();
+});

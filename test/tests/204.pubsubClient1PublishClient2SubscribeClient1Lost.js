@@ -5,33 +5,10 @@ const PinaryClient = require('../../').client;
 require('./testWrap')(__filename, (test) => {
 
     const server = new PinaryServer({ host:'127.0.0.1' });
-    const client1 = new PinaryClient();
-    const client2 = new PinaryClient();
+    let client1;
+    let client2;
 
     let received = false;
-
-    client1.on('connected', (retryCount) => {
-        if (!retryCount) {
-            test.pass('client1 connected');
-        } else {
-            test.pass('client1 reconnected');
-        }
-
-        client1.subscribe('/bla', (data) => {
-            test.pass('received "foo" from channel /bla');
-            if (data === 'foo') {
-                received = true;
-            }
-        });
-    });
-
-    client2.on('connected', (retryCount) => {
-        if (!retryCount) {
-            test.pass('client2 connected');
-        } else {
-            test.pass('client2 reconnected');
-        }
-    });
 
     async.series([
         server.start,
@@ -39,16 +16,41 @@ require('./testWrap')(__filename, (test) => {
             test.pass('server started');
             next();
         },
-        client1.connect,
-        client2.connect,
+        next => {
+            client1 = new PinaryClient();
+            client1.on('connected', (retryCount) => {
+                if (!retryCount) {
+                    test.pass('client1 connected');
+                    next();
+                } else {
+                    test.pass('client1 reconnected');
+                }
+            });
+            client1.subscribe('/bla', (data) => {
+                test.pass('client1 received "foo" from channel /bla');
+                if (data === 'foo') {
+                    received = true;
+                }
+            });
+        },
+        next => {
+            client2 = new PinaryClient();
+            client2.on('connected', (retryCount) => {
+                if (!retryCount) {
+                    test.pass('client2 connected');
+                    next();
+                }
+            });
+        },
         next => {
             // let the time for clients to connect
             setTimeout(next, 1100);
         },
-        client1.close,
         next => {
-            test.pass('client1 closed');
-            next();
+            client1.close(() => {
+                test.pass('client1 closed');
+                next();
+            });
         },
         next => {
             client2.publish('/bla', 'foo');
@@ -63,10 +65,11 @@ require('./testWrap')(__filename, (test) => {
             }
             next();
         },
-        client2.close,
         next => {
-            test.pass('client2 closed');
-            next();
+            client2.close(() => {
+                test.pass('client2 closed');
+                next();
+            });
         },
         server.stop,
         next => {

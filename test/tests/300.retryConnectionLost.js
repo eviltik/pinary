@@ -6,6 +6,7 @@ const PinaryClient = require('../../').client;
 require('./testWrap')(__filename, (test) => {
 
     let server;
+    let client;
     let reconnected = false;
 
     function serverStart(callback) {
@@ -29,23 +30,13 @@ require('./testWrap')(__filename, (test) => {
         });
     }
 
-    const client = new PinaryClient(null, {
-        reconnectInterval:500,
-        reconnectMaxAttempts:5,
-        reconnectWaitAfterMaxAttempsReached:2000
-    });
+    function clientConnect(callback) {
 
-    function runTest(callback) {
-
-        client.on('error', (err) => {
-            //if (err.message.match(/REFUSED/)) {
-            //    test.pass('client emit error event (CONNECTION REFUSED)');
-            //}
-        });
+        client = new PinaryClient(null);
 
         client.on('reconnecting', (retryCount) => {
             test.pass(`client emit reconnecting event (retryCount = ${retryCount})`);
-            if (retryCount === 11) {
+            if (retryCount === 3) {
                 serverStart();
             }
         });
@@ -54,12 +45,11 @@ require('./testWrap')(__filename, (test) => {
             if (retryCount) {
                 reconnected = true;
                 test.pass(`client emit connected event (retryCount = ${retryCount})`);
+            } else {
+                reconnected = false;
+                test.pass('client connected');
+                callback();
             }
-        });
-
-        client.connect(() => {
-            test.pass('client connected');
-            callback();
         });
     }
 
@@ -76,7 +66,7 @@ require('./testWrap')(__filename, (test) => {
 
     async.series([
         serverStart,
-        runTest,
+        clientConnect,
         serverCrash,
         waitForReconnect,
         clientClose,

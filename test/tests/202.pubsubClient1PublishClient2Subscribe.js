@@ -5,8 +5,8 @@ const PinaryClient = require('../../').client;
 require('./testWrap')(__filename, (test) => {
 
     const server = new PinaryServer({ host:'127.0.0.1' });
-    const client1 = new PinaryClient();
-    const client2 = new PinaryClient();
+    let client1;
+    let client2;
 
     let received = false;
 
@@ -16,12 +16,18 @@ require('./testWrap')(__filename, (test) => {
             test.pass('server started');
             next();
         },
-        client1.connect,
+        next => {
+            client1 = new PinaryClient();
+            client1.on('connected', next);
+        },
         next => {
             test.pass('client1 connected');
             next();
         },
-        client2.connect,
+        next => {
+            client2 = new PinaryClient();
+            client2.on('connected', next);
+        },
         next => {
             test.pass('client2 connected');
             next();
@@ -48,15 +54,17 @@ require('./testWrap')(__filename, (test) => {
             }
             next();
         },
-        client1.close,
         next => {
-            test.pass('client1 closed');
-            next();
+            client1.close(() => {
+                test.pass('client1 closed');
+                next();
+            });
         },
-        client2.close,
         next => {
-            test.pass('client2 closed');
-            next();
+            client2.close(() => {
+                test.pass('client2 closed');
+                next();
+            });
         },
         server.stop,
         next => {

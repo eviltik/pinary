@@ -6,11 +6,9 @@ const client = new Client();
 
 server.start();
 
-client.connect(() => {
-    client.subscribe('/bla', (data) => {
-        console.log(data);
-        process.exit();
-    });
+client.subscribe('/bla', (data) => {
+    console.log(data);
+    process.exit();
 });
 
 setTimeout(() => {

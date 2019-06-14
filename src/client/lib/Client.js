@@ -72,7 +72,7 @@ class BaseClient extends EventEmitter {
     eventExists(eventName) {
 
         if (this._eventsByName[eventName]) {
-            this._debug(`event ${eventName} found`);
+            //this._debug(`event ${eventName} found`);
         } else {
             this._debug(`event ${eventName} NOT found`);
         }
@@ -85,40 +85,40 @@ class BaseClient extends EventEmitter {
         if (fn) fn(data);
     }
 
-    tlsConnect(callback) {
+    tlsConnect() {
         return tls.connect(this._port, this.host, {
             secureProtocol: 'TLSv1_2_method',
             rejectUnauthorized: false,
         }, () => {
-            this.onConnect(callback);
+            this.onConnect();
         });
     }
 
-    tcpConnect(callback) {
+    tcpConnect() {
         return net.connect({
             port:this._port,
             host:this._host
         }, () => {
-            this.onConnect(callback);
+            this.onConnect();
         });
     }
 
-    onConnect(callback) {
+    onConnect() {
         this._id = this._socket.localAddress+':'+this._socket.localPort;
         this._debug(`${this._id}: connected`);
         this._isConnected = true;
         this._requestsQueue.resume();
-        callback();
+        this.emitEvent('socketConnected');
     }
 
-    initializeSocket(callback) {
+    initializeSocket() {
 
         let s;
 
         if (this._options.tls) {
-            s = this.tlsConnect(callback);
+            s = this.tlsConnect();
         } else {
-            s = this.tcpConnect(callback);
+            s = this.tcpConnect();
         }
 
         s.on('timeout', () => {
@@ -156,8 +156,7 @@ class BaseClient extends EventEmitter {
         });
 
         s.on('error', (err) => {
-            this._debug(`${this._id}: error ${err.message}`);
-            callback(err);
+            this._debug(`${this._id||'noid'}: error ${err.message}`);
             this.emitEvent('socketError', err);
             this.unpipeSocket(s);
             s.destroy();
@@ -165,6 +164,7 @@ class BaseClient extends EventEmitter {
 
         this._socket = s;
         this.pipeSocket(s);
+
     }
 
     requestPush(id, method, params, callback) {
@@ -219,20 +219,10 @@ class BaseClient extends EventEmitter {
         throw new Error('Please override methode _requestSend');
     }
 
-    connect(callback) {
+    connect() {
+        this.removeAllListeners();
         this.initializeStream();
-        if (!callback) {
-            return new Promise((resolve, reject) => {
-                this.initializeSocket((err) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    return resolve();
-                });
-            });
-        }
-
-        this.initializeSocket(callback);
+        this.initializeSocket();
 
     }
 
@@ -300,28 +290,21 @@ class BaseClient extends EventEmitter {
         delete this._requests[response.id];
     }
 
-    _getReaderId() {
-        return new Promise((resolve, reject) => {
-            const op = {
-                method:'_getReaderId',
-                resolve,
-                reject
-            };
-            this.request(op);
-        });
+    _getReaderId(callback) {
+        const op = {
+            method:'_getReaderId',
+            callback
+        };
+        this.request(op);
     }
 
-    _setWriter(readerId) {
-        return new Promise((resolve, reject) => {
-            const op = {
-                method:'_setWriter',
-                params:{ readerId },
-                resolve,
-                reject
-            };
-
-            this.request(op);
-        });
+    _setWriter(readerId, callback) {
+        const op = {
+            method:'_setWriter',
+            params:{ readerId },
+            callback
+        };
+        this.request(op);
     }
 
     setClosing() {
@@ -333,32 +316,34 @@ class BaseClient extends EventEmitter {
     }
 
     subscribeTo(channel, callback) {
-        this._debug(`${this._id}: pubsub: client subscribe to ${channel}`);
+        this._debug(`${this._id}: pubsub: client subscribing to ${channel}`);
         this._subscribedChannels[channel] = callback;
     }
 
     subscribeToInformServer(channel, encoder) {
         if (!this._isConnected) {
             this._debug(`${this._id}: pubsub: cannot subscribe: not connected`);
-            return;
+            return false;
         }
 
         this._debug(`${this._id}: pubsub: inform server for subscription to ${channel}`);
         encoder.write(frame.subscribe(channel));
+        return true;
     }
 
     publishTo(channel, data, encoder) {
         if (!this._isConnected) {
             this._debug(`${this._id}: pubsub: cannot publish: not connected`);
-            return;
+            return false;
         }
 
         this._debug(`${this._id}: pubsub: data published in channel ${channel}`);
         encoder.write(frame.publish(channel, data));
+        return true;
     }
 
     on(event, fn) {
-        this._debug(`register event ${event}`);
+        //this._debug(`register event ${event}`);
         this._eventsByName[event] = fn;
     }
 }

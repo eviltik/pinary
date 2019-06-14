@@ -12,41 +12,34 @@ function DinaryClient(port, host, options) {
 
     self.options = options || {};
     self.subscribedChannels = {};
+    self.publishMessages = {};
+    self.isConnected = false;
+    self.retryCount = 0;
 
     if (!self.options.reconnectInterval) {
         self.options.reconnectInterval = 1000;
     }
 
-    if (!self.options.reconnectMaxAttempts) {
-        self.options.reconnectMaxAttempts = 10;
-    }
-
-    if (!self.options.reconnectWaitAfterMaxAttempsReached) {
-        self.options.reconnectWaitAfterMaxAttempsReached = 1000* 60;
-    }
-
-    self.retryCount = 0;
-
     clientReader.on('socketError', err => {
         debug('socketError', err.message);
-        self.emit('error', err);
-    });
-
-    clientWriter.on('socketError', err => {
-        debug('socketError', err.message);
-        self.emit('error', err);
-    });
-
-    clientWriter.on('socketEnd', () => {
-        debug('socketEnd');
-        if (clientWriter.isClosing()) {
-            clientReader.close();
-            return;
+        if (err.message.match(/REFUSED/)) {
+            setTimeout(() => {
+                reconnect();
+            }, self.options.reconnectInterval);
+        } else {
+            self.emit('error', err);
         }
     });
 
     clientReader.on('socketEnd', () => {
         debug('socketEnd');
+
+        if (self.isConnected) {
+            self.emit('disconnected');
+        }
+
+        self.isConnected = false;
+
         if (clientReader.isClosing()) {
             clientWriter.close();
             return;
@@ -57,61 +50,63 @@ function DinaryClient(port, host, options) {
         }, self.options.reconnectInterval);
     });
 
+    clientReader.on('socketConnected', () => {
+        debug('socketConnected');
+        clientReader._getReaderId((err, readerId) => {
+            clientReader.readerId = readerId;
+            clientWriter.connect();
+        });
+    });
+
+    clientWriter.on('socketError', err => {
+        debug('socketError', err.message);
+        self.emit('error', err);
+    });
+
+    clientWriter.on('socketEnd', () => {
+        debug('socketEnd');
+        self.isConnected = false;
+        if (clientWriter.isClosing()) {
+            clientReader.close();
+            return;
+        }
+    });
+
+    clientWriter.on('socketConnected', () => {
+        debug('socketConnected');
+        clientWriter._setWriter(clientReader.readerId, (err, associated) => {
+            if (associated) {
+                debug(`writer associated with reader ${clientReader.readerId}`);
+                self.emit('connected', self.retryCount);
+                self.isConnected = true;
+                self.retryCount = 0;
+                subscribeChannels();
+                pushMessages();
+            }
+        });
+    });
+
     function reconnect() {
         if (clientReader.isClosing()) {
             return;
         }
+
         self.retryCount+=1;
         self.emit('reconnecting', self.retryCount);
-        self.connect((err) => {
+        connect((err) => {
             if (err) {
-                let delay;
-                if (self.retryCount%self.options.reconnectMaxAttempts === 0) {
-                    delay = self.options.reconnectWaitAfterMaxAttempsReached;
-                } else {
-                    delay = self.options.reconnectInterval;
-                }
-                debug(`retry to connect in ${delay}ms`);
                 setTimeout(() => {
                     reconnect();
-                }, delay);
+                }, self.options.reconnectInterval);
             }
         });
     }
 
-    async function connect(callback) {
-        let readerId;
-        try {
-            debug('connecting reader ...');
-            await clientReader.connect();
-            readerId = await clientReader._getReaderId();
-        } catch(e) {
-            callback && callback(e);
-            return;
-        }
-
-        let associated = false;
-        try {
-            debug(`connecting writer ... (readerId = ${readerId})`);
-            await clientWriter.connect();
-            associated = await clientWriter._setWriter(readerId);
-        } catch (e) {
-            callback && callback(e);
-            return;
-        }
-
-        if (!associated) {
-            self.emit('error', 'can not stick writer with reader');
-        }
-
-        self.emit('connected', self.retryCount);
-        self.retryCount = 0;
-
-        callback && callback();
-
+    function connect() {
+        clientReader.connect();
     }
 
-    async function close(callback) {
+    function close(callback) {
         try {
             clientReader.setClosing();
             clientWriter.setClosing();
@@ -140,22 +135,58 @@ function DinaryClient(port, host, options) {
         });
     }
 
+    function subscribeChannels() {
+        for (const channel in self.subscribedChannels) {
+            clientReader.subscribeTo(channel, self.subscribedChannels[channel]);
+            clientWriter.subscribeToInformServer(channel, clientWriter._encoder);
+        }
+    }
+
     function subscribe(channel, callback) {
-        clientReader.subscribeTo(channel, callback);
-        clientWriter.subscribeToInformServer(channel, clientWriter._encoder);
+        if (!self.subscribedChannels[channel]) {
+            self.subscribedChannels[channel] = callback;
+            if (!self.isConnected) {
+                debug(`subscribe: will subscribe to ${channel} when connected`);
+            } else {
+                debug(`subscribe: subscribing to ${channel}`);
+                clientReader.subscribeTo(channel, callback);
+                clientWriter.subscribeToInformServer(channel, clientWriter._encoder);
+            }
+        }
+    }
+
+    function pushMessages() {
+        debug('pushMessages', self.isConnected);
+        if (!self.isConnected) return;
+        for (const channel in self.publishMessages) {
+            debug('empty messages queue', self.publishMessages[channel].length);
+            while (self.publishMessages[channel].length) {
+                clientWriter.publishTo(channel, self.publishMessages[channel].shift(), clientWriter._encoder);
+            }
+        }
     }
 
     function publish(channel, data) {
-        clientWriter.publishTo(channel, data, clientWriter._encoder);
+        if (self.isConnected) {
+            clientWriter.publishTo(channel, data, clientWriter._encoder);
+            return;
+        }
+        if (!self.publishMessages[channel]) {
+            self.publishMessages[channel] = [];
+        }
+        debug(`adding message to publishing in channel ${channel}`);
+        self.publishMessages[channel].push(data);
+        pushMessages();
     }
 
-    self.connect = promisify(connect);
     self.close = promisify(close);
     self.protocol = options.protocol;
     self.rpc = rpc;
     self.rpcPromise = promisify(rpc);
     self.subscribe = subscribe;
     self.publish = publish;
+
+    connect();
 
     return self;
 

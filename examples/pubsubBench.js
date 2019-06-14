@@ -1,9 +1,10 @@
 const Server = require('../').server;
 const Client = require('../').client;
 
+const max = 100000;
 let i = 0;
 
-const server = new Server();
+const server = new Server('tls://localhost');
 server.start();
 
 // mandatory event
@@ -12,23 +13,26 @@ server.on('error', (err) => {
 });
 
 const client = new Client();
-client.connect(() => {
-    client.subscribe('/bla', (data) => {
-        //console.log(data);
-    });
 
-    console.time('p');
-    publishLoop();
-
+client.subscribe('/bla', (data) => {
+    //console.log(data);
 });
 
+client.on('connected', () => {
+    publishLoop();
+});
+
+const start = Date.now();
+
 function publishLoop() {
-    if (i>100000) {
-        console.timeEnd('p');
+    if (i>max) {
+        const end = Date.now();
+        const avg = Math.round((1000*max)/(end-start));
+        console.log(`avg ${avg} msg/sec`);
         process.exit();
         return;
     }
-    server.publish('/bla', { foo:'bar', i });
+    server.publish('/bla', { foo:'bar' });
     i++;
     setImmediate(publishLoop);
     //setTimeout(publishLoop, 1);

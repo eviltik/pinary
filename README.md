@@ -17,7 +17,6 @@ Yet another RPC client and server, with minimalistic publish/subscribe implement
   * Optional ZLIB compression
   * Minimalistic JSON Schema implementation (input integrity)
   * Handle Max Clients
-  * Support callback, promises and async/await syntax
   * Basic publish/subscribe support
 
 * Client
@@ -68,7 +67,7 @@ const server = new PinaryServer();
 ### Client: instantiation
 ```
 const PinaryClient = require('pinary').client;
-const client = new PinaryClient();
+const client = new PinaryClient(); // auto connect
 
 // with a TCP url
 // const client = new PinaryClient('tcp://localhost:64000',[options]);
@@ -79,28 +78,7 @@ const client = new PinaryClient();
 | Option                                | Default                       | Note |      
 |---------------------------------------|-------------------------------|------|
 | reconnectInterval                     | 500                           | milliseconds   |
-| reconnectMaxAttempts                  | 5                             |                |
-| reconnectWaitAfterMaxAttempsReached   | 2000                          | milliseconds   |
 | queueSize                             | 100                           | store rpc calls limit when not connected/disconnected |
-
-### Client: connecting to the server
-```
-// connect using callback
-client.connect(err => {
-    if (err) throw err;
-    console.log('connected');
-});
-
-// connect using async/await
-async function() {
-    try {
-        await client.connect();
-    } catch(e) {
-        throw err;
-    }
-}
-
-```
 
 ### Client: trigger a method
 
@@ -131,6 +109,7 @@ RPC calls are stored in a queue and played when client is connected.
 | event name            | arguments                     |  Notes  
 |-----------------------|-------------------------------|----------------
 | connected             | retryCount                    | if retryCount = 0, first connection, else reconnection  
+| disconnected          |                               |
 | error                 | Error                         |
 
 
@@ -149,16 +128,12 @@ const channel = '/myChannel';
 
 server.start();
 
-client1.connect(() => {
-    client1.subscribe('/bla', (data) => {
-        console.log(data);
-        process.exit();
-    });
-
-    client2.connect(() => {
-        client2.publish('/bla', { foo:'bar' });
-    });
+client1.subscribe('/bla', (data) => {
+    console.log(data);
+    process.exit();
 });
+
+client2.publish('/bla', { foo:'bar' });
 
 ```
 
@@ -174,14 +149,12 @@ const channel = '/myChannel';
 
 server.start();
 
-client.connect(() => {
-    client.subscribe(channel, (data) => {
-        console.log(data);
-        process.exit();
-    });
-
-    server.publish(channel, { foo:'bar' });
+client.subscribe(channel, (data) => {
+    console.log(data);
+    process.exit();
 });
+
+server.publish(channel, { foo:'bar' });
 ```
 
 
@@ -190,7 +163,6 @@ The actual implementation is minimalistic:
 
 
 ## TODO
-* promises tests
 * finish doc
   * events emitted (server)
   * server methods registration (see test/tests/102.methodExist.js, or examples/ for moment)

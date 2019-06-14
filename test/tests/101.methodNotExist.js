@@ -5,7 +5,7 @@ const PinaryClient = require('../../').client;
 require('./testWrap')(__filename, (test) => {
 
     const server = new PinaryServer({ host:'127.0.0.1' });
-    const client = new PinaryClient();
+    let client;
 
     function callbackClientTriggerUnexistingMethod(callback) {
         client.rpc('test', (err) => {
@@ -28,17 +28,21 @@ require('./testWrap')(__filename, (test) => {
             test.pass('server started');
             next();
         },
-        client.connect,
+        next => {
+            client = new PinaryClient();
+            client.on('connected', next);
+        },
         next => {
             test.pass('client connected');
             next();
         },
         callbackClientTriggerUnexistingMethod,
         asyncClientTriggerUnexistingMethod,
-        client.close,
         next => {
-            test.pass('client closed');
-            next();
+            client.close(() => {
+                test.pass('client closed');
+                next();
+            });
         },
         server.stop,
         next => {

@@ -11,6 +11,4 @@ server.subscribe('/bla', (data) => {
     setTimeout(process.exit, 200);
 });
 
-client.connect(() => {
-    client.publish('/bla', { foo:'bar' });
-});
+client.publish('/bla', { foo:'bar' });

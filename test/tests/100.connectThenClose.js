@@ -5,7 +5,7 @@ const PinaryClient = require('../../').client;
 require('./testWrap')(__filename, (test) => {
 
     const server = new PinaryServer({ host:'127.0.0.1' });
-    const client = new PinaryClient();
+    let client;
 
     async.series([
         server.start,
@@ -13,15 +13,19 @@ require('./testWrap')(__filename, (test) => {
             test.pass('server started');
             next();
         },
-        client.connect,
+        next => {
+            client = new PinaryClient();
+            client.on('connected', next);
+        },
         next => {
             test.pass('client connected');
             next();
         },
-        client.close,
         next => {
-            test.pass('client closed');
-            next();
+            client.close(() => {
+                test.pass('client closed');
+                next();
+            });
         },
         server.stop,
         next => {
