@@ -32,7 +32,7 @@ function DinaryClient(port, host, options) {
     });
 
     clientReader.on('socketEnd', () => {
-        debug('socketEnd');
+        debug('socketEnd, was connected', self.isConnected);
 
         if (self.isConnected) {
             self.emit('disconnected');
@@ -65,7 +65,6 @@ function DinaryClient(port, host, options) {
 
     clientWriter.on('socketEnd', () => {
         debug('socketEnd');
-        self.isConnected = false;
         if (clientWriter.isClosing()) {
             clientReader.close();
             return;
