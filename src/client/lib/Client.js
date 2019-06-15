@@ -86,7 +86,7 @@ class BaseClient extends EventEmitter {
     }
 
     tlsConnect() {
-        return tls.connect(this._port, this.host, {
+        return tls.connect(this._port, this._host, {
             secureProtocol: 'TLSv1_2_method',
             rejectUnauthorized: false,
         }, () => {

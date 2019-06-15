@@ -22,7 +22,7 @@ function DinaryClient(port, host, options) {
 
     clientReader.on('socketError', err => {
         debug('socketError', err.message);
-        if (err.message.match(/REFUSED/)) {
+        if (err.message.match(/REFUSED|INVAL/)) {
             setTimeout(() => {
                 reconnect();
             }, self.options.reconnectInterval);
