@@ -121,9 +121,11 @@ class BaseClient extends EventEmitter {
             s = this.tcpConnect();
         }
 
+        s.setTimeout(1000);
+
         s.on('timeout', () => {
-            this._debug(`${this._id}: timeout`);
-            this.emitEvent('timeout');
+            this._debug(`${this._id||this._host+':'+this._port}: timeout`);
+            this.emitEvent('socketTimeout');
             this.close();
         });
 
@@ -156,10 +158,14 @@ class BaseClient extends EventEmitter {
         });
 
         s.on('error', (err) => {
-            this._debug(`${this._id||'noid'}: error ${err.message}`);
+            this._debug(`${this._id||this._host+':'+this._port}: error ${err.message}`);
             this.emitEvent('socketError', err);
             this.unpipeSocket(s);
             s.destroy();
+        });
+
+        s.on('connect', () => {
+            s.setTimeout(0);
         });
 
         this._socket = s;

@@ -31,6 +31,13 @@ function DinaryClient(port, host, options) {
         }
     });
 
+    clientReader.on('socketTimeout', () => {
+        debug('socketTimeout');
+        setTimeout(() => {
+            reconnect();
+        }, self.options.reconnectInterval);
+    });
+
     clientReader.on('socketEnd', () => {
         debug('socketEnd, was connected', self.isConnected);
 
