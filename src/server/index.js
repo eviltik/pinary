@@ -270,7 +270,7 @@ function Server(options) {
             return;
         }
 
-        //let send = 0;
+        let send = 0;
 
         async.mapValues(clientsSubscribedChannel[channel], (writerId, index, next) => {
             if (!server.clients[writerId]) {
