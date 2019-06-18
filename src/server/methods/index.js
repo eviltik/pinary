@@ -43,6 +43,9 @@ function exec(method, params, context, callback) {
 }
 
 function register(method) {
+    if (!method.name) {
+        throw Error('method.name is mandatory');
+    }
     methods[method.name] = method;
     methodsDescriptor[method.name] = method.getDescriptor();
 }
