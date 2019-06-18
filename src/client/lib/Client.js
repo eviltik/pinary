@@ -123,16 +123,11 @@ class BaseClient extends EventEmitter {
 
         s.timeoutTimer = setTimeout(() => {
             this._debug(`${this._id||this._host+':'+this._port}: timeout`);
-            this.emitEvent('socketTimeout');
+            this.emitEvent('socketError', s.lastError);
+            this.unpipeSocket(s);
             this.close();
             s.destroy();
         }, 1000);
-
-        s.on('timeout', () => {
-            this._debug(`${this._id||this._host+':'+this._port}: timeout`);
-            this.emitEvent('socketTimeout');
-            this.close();
-        });
 
         s.on('close', () => {
             if (!this._isConnected) return;
@@ -163,10 +158,13 @@ class BaseClient extends EventEmitter {
         });
 
         s.on('error', (err) => {
-            this._debug(`${this._id||this._host+':'+this._port}: error ${err.message}`);
-            this.emitEvent('socketError', err);
-            this.unpipeSocket(s);
-            s.destroy();
+            s.lastError = err;
+            if (!err.message.match(/REFUSED|INVAL|HOSTUNREACH/)) {
+                this._debug(`${this._id||this._host+':'+this._port}: error ${err.message}`);
+                this.emitEvent('socketError', err);
+                this.unpipeSocket(s);
+                s.destroy();
+            }
         });
 
         s.on('connect', () => {
