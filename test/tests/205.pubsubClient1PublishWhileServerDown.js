@@ -55,7 +55,7 @@ require('./testWrap')(__filename, (test) => {
         },
         server.start,
         next => {
-            setTimeout(next, 1000);
+            setTimeout(next, 2000);
         },
         next => {
             client1.close(() => {
