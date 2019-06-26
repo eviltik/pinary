@@ -42,7 +42,7 @@ function Server(options) {
                 if (err) {
 
                     if (err instanceof Error) {
-                        task.encoder.write(frame.error(task.data.id, 'ERROR_CODE_PARAMETER'));
+                        task.encoder.write(frame.error(task.data.id, err.message));
                         debug(`${task.socket.id}: ${err.stack}`);
                         return;
                     }
