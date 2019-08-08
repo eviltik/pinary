@@ -51,6 +51,9 @@ require('./testWrap')(__filename, (test) => {
                 callback();
             }
         });
+
+        client.on('error', () => {});
+
     }
 
     function waitForReconnect(callback) {

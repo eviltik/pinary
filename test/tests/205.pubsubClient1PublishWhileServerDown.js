@@ -25,6 +25,9 @@ require('./testWrap')(__filename, (test) => {
                     test.pass('client2 reconnected');
                 }
             });
+
+            client2.on('error', () => {});
+
             client2.subscribe('/bla', (data) => {
                 if (data === 'foo') {
                     received = true;
@@ -41,6 +44,9 @@ require('./testWrap')(__filename, (test) => {
                     test.pass('client1 reconnected');
                 }
             });
+
+            client1.on('error', () => {});
+
         },
         server.stop,
         next => {
