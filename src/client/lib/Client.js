@@ -123,7 +123,7 @@ class BaseClient extends EventEmitter {
 
         s.timeoutTimer = setTimeout(() => {
             this._debug(`${this._id||this._host+':'+this._port}: timeout`);
-            this.emitEvent('socketError', s.lastError);
+            this.emitEvent('socketError', s.lastError || new Error('timeout'));
             this.unpipeSocket(s);
             this.close();
             s.destroy();
