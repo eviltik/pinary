@@ -15,6 +15,8 @@ function DinaryClient(port, host, options) {
     self.publishMessages = {};
     self.isConnected = false;
     self.retryCount = 0;
+    self.reconnect = reconnect;
+    self.connect = connect;
 
     if (!self.options.reconnectInterval) {
         self.options.reconnectInterval = 1000;
@@ -22,7 +24,7 @@ function DinaryClient(port, host, options) {
 
     clientReader.on('socketError', err => {
         debug('socketError', err.message);
-        if (err.message.match(/REFUSED|INVAL|HOSTUNREACH|TIME/i)) {
+        if (err.message.match(/REFUSED|INVAL|HOSTUNREACH|TIME|RESET/i)) {
             self.emit('error', err);
             setTimeout(() => {
                 reconnect();
