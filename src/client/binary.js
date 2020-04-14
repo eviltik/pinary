@@ -3,7 +3,8 @@ const missive = require('missive');
 const Client = require('./lib/Client');
 const attributes = require('../attributes');
 
-const ZLIB = false;
+const useZLIB = false;
+const maxSIZE = 1024 * 1024 * 10; // 10 Mo
 
 class BinaryClient extends Client {
 
@@ -14,9 +15,9 @@ class BinaryClient extends Client {
     }
 
     initializeStream() {
-        this._decoder = missive.parse({ inflate: ZLIB });
+        this._decoder = missive.parse({ maxSize: maxSIZE, inflate: useZLIB });
         this._decoder.on('message', this.onMessage.bind(this));
-        this._encoder = missive.encode({ deflate:ZLIB });
+        this._encoder = missive.encode({ maxSize: maxSIZE, deflate: useZLIB });
     }
 
     pipeSocket(socket) {

@@ -23,6 +23,8 @@ const DEFAULT_OPTIONS = {
     timeoutData:1000
 };
 
+const maxSIZE = 1024 * 1024 * 10; // 10 Mo
+
 function Server(options) {
 
     options = merge(DEFAULT_OPTIONS, options||{});
@@ -102,8 +104,8 @@ function Server(options) {
 
         debug(`${socket.id}: client connected`);
 
-        const encoder = missive.encode({ deflate: options.useZLIB });
-        const decoder = missive.parse({ inflate: options.useZLIB });
+        const encoder = missive.encode({ maxSize: maxSIZE, deflate: options.useZLIB });
+        const decoder = missive.parse({ maxSize: maxSIZE, inflate: options.useZLIB });
 
         decoder.on('message', data => {
 
