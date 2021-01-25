@@ -9,16 +9,16 @@
   "author": "eviltik",
   "license": "MIT",
   "dependencies": {
-    "debug": "4.1.1",
-    "deepmerge": "3.2.0",
-    "hyperid": "2.0.2",
+    "debug": "4.3.1",
+    "deepmerge": "4.2.2",
+    "hyperid": "2.1.0",
     "missive": "3.0.1"
   },
   "devDependencies": {
-    "async": "3.0.1",
+    "async": "3.2.0",
     "klaw-sync": "6.0.0",
     "tap-spec": "5.0.0",
-    "tape": "4.10.2"
+    "tape": "5.1.1"
   },
   "directories": {
     "test": "test"

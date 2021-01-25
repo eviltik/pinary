@@ -1,9 +1,9 @@
 # pinary
 
-[![Build Status](https://secure.travis-ci.org/eviltik/pinary.png)](http://travis-ci.org/eviltik/pinary)
-[![Dependencies](https://david-dm.org/eviltik/pinary.svg)](https://david-dm.org/eviltik/pinary)
+[![Node.js CI](https://github.com/eviltik/pinary/workflows/Node.js%20CI/badge.svg)
 [![npm version](https://badge.fury.io/js/pinary.svg)](https://badge.fury.io/js/pinary)
-[![Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=102)](https://github.com/ellerbrock/open-source-badge/)
+[![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+[![Dependency Status](https://david-dm.org/eviltik/pinary.svg)](https://david-dm.org/eviltik/pinary)
 
 
 ## Introduction
