@@ -15,7 +15,7 @@
     "missive": "3.0.1"
   },
   "devDependencies": {
-    "async": "3.2.1",
+    "async": "3.2.2",
     "klaw-sync": "6.0.0",
     "tap-spec": "5.0.0",
     "tape": "5.3.1"
